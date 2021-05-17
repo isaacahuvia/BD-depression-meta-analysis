@@ -12,6 +12,7 @@ libraries("tidyverse", "robumeta")
 
 ####  Load Data  ####
 out <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Effect Sizes.rds")
+df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
 
 
 
@@ -20,10 +21,19 @@ out <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissati
 #https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf
 
 #Intercept-only model
-model.IO <- robu(formula = effect ~ 1, 
+model.IO.old <- robu(formula = effect ~ 1,
                  data = out, 
                  studynum = studyID, 
-                 var.eff.size = var, 
+                 var.eff.size = variance, 
+                 rho = .8, #What should we have here? Doesn't seem to make a diff in output
+                 small = T)
+
+print(model.IO.old)
+
+model.IO <- robu(formula = effectSize.post ~ 1, 
+                 data = df, 
+                 studynum = studyID, 
+                 var.eff.size = variance, 
                  rho = .8, #What should we have here? Doesn't seem to make a diff in output
                  small = T)
 
@@ -32,7 +42,7 @@ print(model.IO)
 dev.off()
 forest.robu(model.IO,
             es.lab = "effectLabel",
-            study.lab = "studyLabel")
+            study.lab = "article")
 
 ## Moderation tests
 ## For the following variables where >=3 per group
@@ -68,7 +78,7 @@ forest.robu(model.IO,
 robu(formula = effect ~ 1 + outcome, 
      data = out, 
      studynum = studyID, 
-     var.eff.size = var, 
+     var.eff.size = variance, 
      rho = .8, 
      small = T)
 
@@ -76,7 +86,7 @@ robu(formula = effect ~ 1 + outcome,
 robu(formula = effect ~ 1 + meanType, 
      data = out, 
      studynum = studyID, 
-     var.eff.size = var, 
+     var.eff.size = variance, 
      rho = .8, 
      small = T)
 
@@ -84,6 +94,15 @@ robu(formula = effect ~ 1 + meanType,
 robu(formula = effect ~ 1 + (randUnits > 30), 
      data = out, 
      studynum = studyID, 
-     var.eff.size = var, 
+     var.eff.size = variance, 
+     rho = .8, 
+     small = T)
+
+#Percent female
+#Randomized units
+robu(formula = effect ~ 1 + pctFemale, 
+     data = out, 
+     studynum = studyID, 
+     var.eff.size = variance, 
      rho = .8, 
      small = T)
