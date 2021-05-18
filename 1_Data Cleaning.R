@@ -63,9 +63,11 @@ df <- raw %>%
             post.n = `n.(post)`,
             post.mean = `mean.(post)`,
             post.sd = `sd.(post)`,
+            fu1.time = `time.(fu1)`,
             fu1.n = `n.(fu1)`,
             fu1.mean = `mean.(fu1)`,
             fu1.sd = `sd.(fu1)`,
+            fu2.time = `time.(fu2)`,
             fu2.n = `n.(fu2)`,
             fu2.mean = `mean.(fu2)`,
             fu2.sd = `sd.(fu2)`) %>%
@@ -137,7 +139,5 @@ df.pairs <- left_join(df.pairs,
 
 
 ####  Save Data  ####
-saveRDS(df,
-        "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data.rds")
 saveRDS(df.pairs,
         "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data (Paired).rds")
