@@ -84,7 +84,7 @@ forest.robu(model.IO,
 
 ### Moderation tests
 
-Moderation tests for each of the following variables (pre-registered) with n >= 3 studies per group.
+Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
 
 TBD
 
