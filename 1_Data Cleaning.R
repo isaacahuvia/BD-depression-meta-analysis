@@ -132,8 +132,8 @@ df.pairs <- left_join(df.treatment,
                       by = c("studyID", "outcome", "measure", "respondent"))
 
 #Add on study variables
-df.pairs <- left_join(df.pairs,
-                      df.study,
+df.pairs <- left_join(df.study,
+                      df.pairs,
                       by = "studyID")
 
 
