@@ -16,24 +16,24 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 
 ## Prepare Follow-up Data
 #Reshape to long dataset, code for follow-up time-point, and keep only follow-up outcomes
-df.fu <- df %>%
-        select(-c(effectSize.post, variance.post)) %>%
-        pivot_longer(cols = effectSize.fu1:time.fu2,
-                     names_to = c("var", "followUp"),
-                     names_sep = "\\.") %>%
-        pivot_wider(names_from = "var",
-                    values_from = "value") %>%
-        drop_na(effectSize, variance, time) %>%
-        mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"))
+# df.fu <- df %>%
+#         select(-c(effectSize.post, variance.post)) %>%
+#         pivot_longer(cols = effectSize.fu1:time.fu2,
+#                      names_to = c("var", "followUp"),
+#                      names_sep = "\\.") %>%
+#         pivot_wider(names_from = "var",
+#                     values_from = "value") %>%
+#         drop_na(effectSize, variance, time) %>%
+#         mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"))
 
 
 ## Set Functions
-modTest <- function(var) robu(formula = as.formula(paste0("effectSize.post ~ 1 + ", var)),
-                              data = df,
-                              studynum = studyID,
-                              var.eff.size = variance.post,
-                              rho = .8,
-                              small = T)
+# modTest <- function(var) robu(formula = as.formula(paste0("effectSize.post ~ 1 + ", var)),
+#                               data = df,
+#                               studynum = studyID,
+#                               var.eff.size = variance.post,
+#                               rho = .8,
+#                               small = T)
 ```
 
 # Meta-analysis
@@ -44,11 +44,32 @@ Meta-analysis is conducted using robuse variance estimation (RVE) methods with `
 
 ### Intercept-only model
 
+# USING PRE-POST DATA
+
 ```{r}
-model.IO <- robu(formula = effectSize.post ~ 1, 
+model.IO <- robu(formula = g.post ~ 1, 
                  data = df, 
                  studynum = studyID, 
-                 var.eff.size = variance.post, 
+                 var.eff.size = varG.post, 
+                 rho = .8, #What should we have here? Doesn't seem to make a diff in output
+                 small = T)
+
+print(model.IO)
+```
+
+```{r,  fig.width = 12, fig.height = 12}
+forest.robu(model.IO,
+            es.lab = "effectLabel",
+            study.lab = "article")
+```
+
+# USING POST DATA ONLY
+
+```{r}
+model.IO <- robu(formula = g.post_alt ~ 1, 
+                 data = df, 
+                 studynum = studyID, 
+                 var.eff.size = varG.post_alt, 
                  rho = .8, #What should we have here? Doesn't seem to make a diff in output
                  small = T)
 
@@ -72,22 +93,3 @@ _End of post-test effects analysis._
 ## Follow-up effects
 
 ### Intercept-only model
-
-```{r}
-
-
-model.IO <- robu(formula = effectSize ~ 1, 
-                 data = df.fu, 
-                 studynum = studyID, 
-                 var.eff.size = variance, 
-                 rho = .8, #What should we have here? Doesn't seem to make a diff in output
-                 small = T)
-
-print(model.IO)
-```
-
-```{r,  fig.width = 12, fig.height = 12}
-forest.robu(model.IO,
-            es.lab = "effectLabel",
-            study.lab = "article")
-```

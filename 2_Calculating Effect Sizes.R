@@ -17,31 +17,55 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 
 ####  Calculate Effect Sizes  ####
 ## Define functions
-calculateES.unadjusted <- function(t.y1, t.y2, t.n1, t.n2, t.s1, t.s2,
-                                   c.y1, c.y2, c.n1, c.n2, c.s1, c.s2) {
+
+#Calculate Cohen's d using pre- and post-test data (for studies where this is available)
+#Done by taking the mean pre-post change in the treatment group minus the mean pre-post change in the control group, divided by the pooled pretest standard deviation.
+#See Morris, S. B. (2008). Estimating effect sizes from pretest-posttest-control group designs. Organizational research methods, 11(2), 364-386.
+calculateD.t1t2 <- function(y1.t, y2.t, n1.t, s1.t,
+                            y1.c, y2.c, n1.c, s1.c) {
   
-  #Calculate treatment group pre-post effect size 
-  t.sPooled = sqrt((((t.n1 - 1) * t.s1^2) + ((t.n2 - 1) * t.s2^2)) / ((t.n1 - 1) + (t.n2 - 1)))
-  t.g = (t.y2 - t.y1) / t.sPooled
+  #Calculate pre-post change in treatment group
+  diff.t = y2.t - y1.t
   
-  #Calculate control group pre-post effect size
-  c.sPooled = sqrt((((c.n1 - 1) * c.s1^2) + ((c.n2 - 1) * c.s2^2)) / ((c.n1 - 1) + (c.n2 - 1)))
-  c.g = (c.y2 - c.y1) / c.sPooled
+  #Calculate pre-post change in control group
+  diff.c = y2.c - y1.c
   
-  #Calculate between-group effect size by taking the difference
-  #Adjust for small sample size?
-  g = t.g - c.g
+  #Calculate pooled pre-test standard deviation
+  sPooled = sqrt((((n1.t - 1) * s1.t^2) + ((n1.c - 1) * s1.c^2)) / ((n1.c - 1) + (n1.t - 1)))
   
-  return(g)
+  #Calculate effect size
+  d = (diff.t - diff.c) / sPooled
+  
+  return(d)
   
 }
 
-calculateES.adjusted <- function(t.y2, t.n2, t.s2,
-                                 c.y2, c.n2, c.s2) {
+#Calculate Cohen's d using post-test data only
+#Done by taking difference in means divided by the pooled posttest standard deviation
+#See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
+calculateD.t2 <- function(y2.t, n2.t, s2.t,
+                          y2.c, n2.c, s2.c) {
   
-  #Calculate between-group effect size using adjusted means
-  sPooled = sqrt((((t.n2 - 1) * t.s2^2) + ((c.n2 - 1) * c.s2^2)) / ((t.n2 - 1) + (c.n2 - 1)))
-  g = (t.y2 - c.y2) / sPooled
+  #Calculate between-group effect size using post-test (adjusted) means
+  sPooled = sqrt((((n2.t - 1) * s2.t^2) + ((n2.c - 1) * s2.c^2)) / ((n2.t - 1) + (n2.c - 1)))
+  d = (y2.t - y2.c) / sPooled
+  
+  return(d)
+  
+}
+
+calculateJ <- function(n.t, n.c) {
+  
+  df = n.t + n.c - 2
+  J = 1 - (3 / ((4 * df) - 1))
+  
+}
+
+calculateVarD <- function(n.t, n.c, d) {
+  
+  varD = ((n.t + n.c) / (n.t * n.c)) + ((d^2) / (2 * (n.t + n.c)))
+  
+  return(varD)
   
 }
 
@@ -51,53 +75,29 @@ df.ES <- df %>%
     effectLabel = paste0(if_else(meanType == "Adjusted", "*", ""), t.groupDetailed, " vs ", c.groupDetailed, ", ", outcome),
     
     #Calculate effect size (post-test)
-    effectSize.post = case_when(
+    d.post = case_when(
       
-      meanType == "Unadjusted" ~ calculateES.unadjusted(t.y1 = t.pre.mean, t.n1 = t.pre.n, t.s1 = t.pre.sd,
-                                                        t.y2 = t.post.mean, t.n2 = t.post.n, t.s2 = t.post.sd,
-                                                        c.y1 = c.pre.mean, c.n1 = c.pre.n, c.s1 = c.pre.sd,
-                                                        c.y2 = c.post.mean, c.n2 = c.post.n, c.s2 = c.post.sd),
-      meanType == "Adjusted" ~ calculateES.adjusted(t.y2 = t.post.mean, t.n2 = t.post.n, t.s2 = t.post.sd,
-                                                    c.y2 = c.post.mean, c.n2 = c.post.n, c.s2 = c.post.sd)
+      meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.post.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
+                                                 y1.c = c.pre.mean, y2.c = c.post.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
+      meanType == "Adjusted" ~ calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
+                                             y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd)
       
     ),
     
-    #Calculate effect size variance (post-test) - don't think this is quite how it works!!
-    variance.post = 1 / (t.post.n + c.post.n),
+    d.post_alt = calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
+                               y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd),
     
-    #Calculate effect size (follow-up 1)
-    effectSize.fu1 = case_when(
-      
-      meanType == "Unadjusted" ~ calculateES.unadjusted(t.y1 = t.pre.mean, t.n1 = t.pre.n, t.s1 = t.pre.sd,
-                                                        t.y2 = t.fu1.mean, t.n2 = t.fu1.n, t.s2 = t.fu1.sd,
-                                                        c.y1 = c.pre.mean, c.n1 = c.pre.n, c.s1 = c.pre.sd,
-                                                        c.y2 = c.fu1.mean, c.n2 = c.fu1.n, c.s2 = c.fu1.sd),
-      meanType == "Adjusted" ~ calculateES.adjusted(t.y2 = t.fu1.mean, t.n2 = t.fu1.n, t.s2 = t.fu1.sd,
-                                                    c.y2 = c.fu1.mean, c.n2 = c.fu1.n, c.s2 = c.fu1.sd)
-      
-    ),
     
-    #Calculate effect size variance (follow-up 1) - don't think this is quite how it works!!
-    variance.fu1 = 1 / (t.fu1.n + c.fu1.n),
+    varD.post = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post),
+    varD.post_alt = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post_alt),
     
-    time.fu1 = t.fu1.time,
+    J.post = calculateJ(n.t = t.post.n, n.c = c.post.n),
     
-    #Calculate effect size (last follow-up)
-    effectSize.fu2 = case_when(
-      
-      meanType == "Unadjusted" ~ calculateES.unadjusted(t.y1 = t.pre.mean, t.n1 = t.pre.n, t.s1 = t.pre.sd,
-                                                        t.y2 = t.fu2.mean, t.n2 = t.fu2.n, t.s2 = t.fu2.sd,
-                                                        c.y1 = c.pre.mean, c.n1 = c.pre.n, c.s1 = c.pre.sd,
-                                                        c.y2 = c.fu2.mean, c.n2 = c.fu2.n, c.s2 = c.fu2.sd),
-      meanType == "Adjusted" ~ calculateES.adjusted(t.y2 = t.fu2.mean, t.n2 = t.fu2.n, t.s2 = t.fu2.sd,
-                                                    c.y2 = c.fu2.mean, c.n2 = c.fu2.n, c.s2 = c.fu2.sd)
-      
-    ),
+    g.post = d.post * J.post,
+    g.post_alt = d.post_alt * J.post,
     
-    #Calculate effect size variance (last follow-up) - don't think this is quite how it works!!
-    variance.fu2 = 1 / (t.fu2.n + c.fu2.n),
-    
-    time.fu2 = t.fu2.time
+    varG.post = J.post^2 * varD.post,
+    varG.post_alt = J.post^2 * varD.post_alt
     
   )
 
