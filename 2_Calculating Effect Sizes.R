@@ -60,6 +60,8 @@ calculateJ <- function(n.t, n.c) {
   df = n.t + n.c - 2
   J = 1 - (3 / ((4 * df) - 1))
   
+  return(J)
+  
 }
 
 #Calculate variance of Cohen's d
@@ -79,7 +81,7 @@ df.ES <- df %>%
     
     ## Calculate post-test effect size variables
     #Calculate Cohen's d effect size (post-test)
-    d.post = case_when(
+    d.post_t1t2 = case_when(
       
       meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.post.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
                                                  y1.c = c.pre.mean, y2.c = c.post.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
@@ -89,32 +91,32 @@ df.ES <- df %>%
     ),
     
     #Calculate Cohen's d effect size (post-test), this one using only post-test data
-    d.post_alt = calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
+    d.post_t2 = calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
                                y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd),
     
     #Calculate variance of Cohen's d effect size (post-test)
-    varD.post = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post),
-    varD.post_alt = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post_alt),
+    varD.post_t1t2 = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post_t1t2),
+    varD.post_t2 = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post_t2),
     
     #Calculate correction factor J for Hedge's g (post-test)
     J.post = calculateJ(n.t = t.post.n, n.c = c.post.n),
     
     #Calculate Hedge's g using Cohen's d and correction factor J (post-test)
       #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
-    g.post = d.post * J.post,
-    g.post_alt = d.post_alt * J.post,
+    g.post_t1t2 = d.post_t1t2 * J.post,
+    g.post_t2 = d.post_t2 * J.post,
     
     #Calculate variance of Hedge's g using variance of Cohen's d and correction factor J (post-test)
       #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
-    varG.post = J.post^2 * varD.post,
-    varG.post_alt = J.post^2 * varD.post_alt,
+    varG.post_t1t2 = J.post^2 * varD.post_t1t2,
+    varG.post_t2 = J.post^2 * varD.post_t2,
     
     
-    ## Calculate follow-up effect size variables (follow-up 1)
+    ## Calculate follow-up 1 effect size variables
     time.fu1 = t.fu1.time,
     
     #Calculate Cohen's d effect size (follow-up 1)
-    d.fu1 = case_when(
+    d.fu1_t1t2 = case_when(
       
       meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu1.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
                                                  y1.c = c.pre.mean, y2.c = c.fu1.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
@@ -122,25 +124,34 @@ df.ES <- df %>%
                                              y2.c = c.fu1.mean, n2.c = c.fu1.n, s2.c = c.fu1.sd)
       
     ),
-
+    
+    #Calculate Cohen's d effect size (follow-up 1), this one using only follow-up 1 data
+    d.fu1_t2 = calculateD.t2(y2.t = t.fu1.mean, n2.t = t.fu1.n, s2.t = t.fu1.sd,
+                              y2.c = c.fu1.mean, n2.c = c.fu1.n, s2.c = c.fu1.sd),
+    
     #Calculate variance of Cohen's d effect size (follow-up 1)
-    varD.fu1 = calculateVarD(n.t = t.fu1.n, n.c = c.fu1.n, d = d.fu1),
-
+    varD.fu1_t1t2 = calculateVarD(n.t = t.fu1.n, n.c = c.fu1.n, d = d.fu1_t1t2),
+    varD.fu1_t2 = calculateVarD(n.t = t.fu1.n, n.c = c.fu1.n, d = d.fu1_t2),
+    
     #Calculate correction factor J for Hedge's g (follow-up 1)
     J.fu1 = calculateJ(n.t = t.fu1.n, n.c = c.fu1.n),
     
     #Calculate Hedge's g using Cohen's d and correction factor J (follow-up 1)
-    g.fu1 = d.fu1 * J.fu1,
-
+    #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
+    g.fu1_t1t2 = d.fu1_t1t2 * J.fu1,
+    g.fu1_t2 = d.fu1_t2 * J.fu1,
+    
     #Calculate variance of Hedge's g using variance of Cohen's d and correction factor J (follow-up 1)
-    varG.fu1 = J.fu1^2 * varD.fu1,
+    #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
+    varG.fu1_t1t2 = J.fu1^2 * varD.fu1_t1t2,
+    varG.fu1_t2 = J.fu1^2 * varD.fu1_t2,
     
     
-    ## Calculate follow-up effect size variables (follow-up 2)
+    ## Calculate follow-up 2 effect size variables
     time.fu2 = t.fu2.time,
     
     #Calculate Cohen's d effect size (follow-up 2)
-    d.fu2 = case_when(
+    d.fu2_t1t2 = case_when(
       
       meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu2.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
                                                  y1.c = c.pre.mean, y2.c = c.fu2.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
@@ -149,18 +160,27 @@ df.ES <- df %>%
       
     ),
     
+    #Calculate Cohen's d effect size (follow-up 2), this one using only follow-up 2 data
+    d.fu2_t2 = calculateD.t2(y2.t = t.fu2.mean, n2.t = t.fu2.n, s2.t = t.fu2.sd,
+                             y2.c = c.fu2.mean, n2.c = c.fu2.n, s2.c = c.fu2.sd),
+    
     #Calculate variance of Cohen's d effect size (follow-up 2)
-    varD.fu2 = calculateVarD(n.t = t.fu2.n, n.c = c.fu2.n, d = d.fu2),
+    varD.fu2_t1t2 = calculateVarD(n.t = t.fu2.n, n.c = c.fu2.n, d = d.fu2_t1t2),
+    varD.fu2_t2 = calculateVarD(n.t = t.fu2.n, n.c = c.fu2.n, d = d.fu2_t2),
     
     #Calculate correction factor J for Hedge's g (follow-up 2)
     J.fu2 = calculateJ(n.t = t.fu2.n, n.c = c.fu2.n),
     
     #Calculate Hedge's g using Cohen's d and correction factor J (follow-up 2)
-    g.fu2 = d.fu2 * J.fu2,
+    #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
+    g.fu2_t1t2 = d.fu2_t1t2 * J.fu2,
+    g.fu2_t2 = d.fu2_t2 * J.fu2,
     
     #Calculate variance of Hedge's g using variance of Cohen's d and correction factor J (follow-up 2)
-    varG.fu2 = J.fu2^2 * varD.fu2,
-
+    #See Borenstein, Michael, Larry V. Hedges, Julian P. T. Higgins, and Hannah R. Rothstein. 2009. Introduction to Meta-Analysis. John Wiley & Sons.
+    varG.fu2_t1t2 = J.fu2^2 * varD.fu2_t1t2,
+    varG.fu2_t2 = J.fu2^2 * varD.fu2_t2,
+    
   )
 
 
