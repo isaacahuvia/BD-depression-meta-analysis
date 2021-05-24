@@ -398,14 +398,14 @@ print(model.r)</code></pre>
 ## 
 ## Model: g.post_t2 ~ 1 
 ## 
-## Number of studies = 12 
-## Number of outcomes = 19 (min = 1 , mean = 1.58 , median = 1 , max = 4 )
+## Number of studies = 13 
+## Number of outcomes = 41 (min = 1 , mean = 3.15 , median = 2 , max = 6 )
 ## Rho = 0.8 
-## I.sq = 61.22859 
-## Tau.sq = 0.02194864 
+## I.sq = 57.69774 
+## Tau.sq = 0.01769347 
 ## 
-##                Estimate StdErr t-value dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
-## 1 X.Intercept.   -0.219 0.0605   -3.63 8.7 0.00582   -0.357  -0.0819 ***
+##                Estimate StdErr t-value  dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
+## 1 X.Intercept.   -0.199 0.0522    -3.8 9.29 0.00396   -0.316   -0.081 ***
 ## ---
 ## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
 ## ---
@@ -424,14 +424,14 @@ print(model.r)</code></pre>
 ## 
 ## Model: g.post_t2 ~ 1 
 ## 
-## Number of studies = 12 
-## Number of outcomes = 19 (min = 1 , mean = 1.58 , median = 1 , max = 4 )
+## Number of studies = 13 
+## Number of outcomes = 41 (min = 1 , mean = 3.15 , median = 2 , max = 6 )
 ## Rho = 0.8 
-## I.sq = 61.22859 
-## Tau.sq = 0.02194864 
+## I.sq = 57.69774 
+## Tau.sq = 0.01769347 
 ## 
-##                Estimate StdErr t-value dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
-## 1 X.Intercept.   -0.219 0.0605   -3.63 8.7 0.00582   -0.357  -0.0819 ***
+##                Estimate StdErr t-value  dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
+## 1 X.Intercept.   -0.199 0.0522    -3.8 9.29 0.00396   -0.316   -0.081 ***
 ## ---
 ## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
 ## ---
@@ -446,6 +446,7 @@ print(model.r)</code></pre>
 <p>Additional reference: <a href="https://wviechtb.github.io/metafor/reference/rma.mv.html" class="uri">https://wviechtb.github.io/metafor/reference/rma.mv.html</a></p>
 <p>Additional tutorial: <a href="https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html" class="uri">https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html</a></p>
 <p>On difference between <code>metafor</code> and <code>robumeta</code>: <a href="https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html" class="uri">https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html</a></p>
+<p>See also: <a href="https://cran.r-project.org/web/packages/clubSandwich/vignettes/meta-analysis-with-CRVE.html" class="uri">https://cran.r-project.org/web/packages/clubSandwich/vignettes/meta-analysis-with-CRVE.html</a></p>
 <div id="metaforrma.mv-model" class="section level3">
 <h3><code>metafor::rma.mv</code> model</h3>
 <pre class="r"><code>model.m &lt;- rma.mv(yi = g.post_t2 ~ 1,
@@ -456,14 +457,14 @@ print(model.r)</code></pre>
 
 print(model.m)</code></pre>
 <pre><code>## 
-## Number of outcomes:   19
-## Number of clusters:   12
-## Outcomes per cluster: 1-4 (mean: 1.58, median: 1)
+## Number of outcomes:   41
+## Number of clusters:   13
+## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2358  0.0625  -3.7701  0.0031  -0.3735  -0.0981  ** 
+##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -482,17 +483,17 @@ print(model.m)</code></pre>
        V = varG.post_t2,
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 19; method: REML)
+## Multivariate Meta-Analysis Model (k = 41; method: REML)
 ## 
 ## Variance Components: none
 ## 
 ## Test for Heterogeneity:
-## Q(df = 18) = 43.8993, p-val = 0.0006
+## Q(df = 40) = 72.6552, p-val = 0.0012
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.1612  0.0256  -6.3041  &lt;.0001  -0.2113  -0.1111  *** 
+##  -0.1265  0.0158  -7.9970  &lt;.0001  -0.1575  -0.0955  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -504,17 +505,17 @@ print(model.m)</code></pre>
        W = k / (varG.post_t2_mean),
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 19; method: REML)
+## Multivariate Meta-Analysis Model (k = 41; method: REML)
 ## 
 ## Variance Components: none
 ## 
 ## Test for Heterogeneity:
-## Q(df = 18) = 43.8993, p-val = 0.0006
+## Q(df = 40) = 72.6552, p-val = 0.0012
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.2156  0.0291  -7.4075  &lt;.0001  -0.2727  -0.1586  *** 
+##  -0.1269  0.0172  -7.3752  &lt;.0001  -0.1606  -0.0931  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -526,20 +527,20 @@ print(model.m)</code></pre>
        random = ~ 1 | studyID,
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 19; method: REML)
+## Multivariate Meta-Analysis Model (k = 41; method: REML)
 ## 
 ## Variance Components:
 ## 
 ##             estim    sqrt  nlvls  fixed   factor 
-## sigma^2    0.0286  0.1691     12     no  studyID 
+## sigma^2    0.0485  0.2201     13     no  studyID 
 ## 
 ## Test for Heterogeneity:
-## Q(df = 18) = 43.8993, p-val = 0.0006
+## Q(df = 40) = 72.6552, p-val = 0.0012
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.2358  0.0630  -3.7403  0.0002  -0.3594  -0.1122  *** 
+##  -0.2511  0.0687  -3.6544  0.0003  -0.3857  -0.1164  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -552,14 +553,14 @@ print(model.m)</code></pre>
        data = df) %&gt;%
   robust(cluster = df$studyID)</code></pre>
 <pre><code>## 
-## Number of outcomes:   19
-## Number of clusters:   12
-## Outcomes per cluster: 1-4 (mean: 1.58, median: 1)
+## Number of outcomes:   41
+## Number of clusters:   13
+## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2358  0.0625  -3.7701  0.0031  -0.3735  -0.0981  ** 
+##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -572,14 +573,14 @@ print(model.m)</code></pre>
        data = df) %&gt;%
   robust(cluster = df$studyID)</code></pre>
 <pre><code>## 
-## Number of outcomes:   19
-## Number of clusters:   12
-## Outcomes per cluster: 1-4 (mean: 1.58, median: 1)
+## Number of outcomes:   41
+## Number of clusters:   13
+## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2358  0.0625  -3.7701  0.0031  -0.3735  -0.0981  ** 
+##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -589,7 +590,7 @@ print(model.m)</code></pre>
 <pre class="r"><code>anova.rma(model.m)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficient 1):
-## F(df1 = 1, df2 = 11) = 14.2139, p-val = 0.0031</code></pre>
+## F(df1 = 1, df2 = 12) = 13.4150, p-val = 0.0033</code></pre>
 <pre class="r"><code>model.m.mod &lt;- rma.mv(yi = g.post_t2 ~ 1 + factor(controlCond),
                       V = varG.post_t2,
                       random = ~ 1 | studyID,
@@ -598,26 +599,30 @@ print(model.m)</code></pre>
 
 print(model.m.mod)</code></pre>
 <pre><code>## 
-## Number of outcomes:   19
-## Number of clusters:   12
-## Outcomes per cluster: 1-4 (mean: 1.58, median: 1)
+## Number of outcomes:   41
+## Number of clusters:   13
+## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
 ## 
 ## Test of Moderators (coefficients 2:3):
-## F(df1 = 2, df2 = 9) = 1.5355, p-val = 0.2668
+## F(df1 = 2, df2 = 10) = 7.0448, p-val = 0.0123
 ## 
 ## Model Results:
 ## 
-##                       estimate      se     tval    pval    ci.lb    ci.ub 
-## intrcpt                -0.2475  0.0825  -3.0008  0.0149  -0.4341  -0.0609  * 
-## factor(controlCond)2    0.0192  0.1320   0.1456  0.8875  -0.2795   0.3179    
-## factor(controlCond)4    0.0223  0.0153   1.4546  0.1797  -0.0124   0.0569    
+##                                           estimate      se     tval    pval 
+## intrcpt                                    -0.2231  0.0767  -2.9072  0.0156 
+## factor(controlCond)Psychoeducation         -0.0374  0.1420  -0.2636  0.7974 
+## factor(controlCond)Waitlist/no treatment   -0.0338  0.0112  -3.0082  0.0132 
+##                                             ci.lb    ci.ub 
+## intrcpt                                   -0.3940  -0.0521  * 
+## factor(controlCond)Psychoeducation        -0.3538   0.2790    
+## factor(controlCond)Waitlist/no treatment  -0.0588  -0.0088  * 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <pre class="r"><code>anova.rma(model.m.mod)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficients 2:3):
-## F(df1 = 2, df2 = 9) = 1.5355, p-val = 0.2668</code></pre>
+## F(df1 = 2, df2 = 10) = 7.0448, p-val = 0.0123</code></pre>
 </div>
 </div>
 </div>
