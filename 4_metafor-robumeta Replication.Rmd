@@ -18,7 +18,7 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 
 ## `robumeta`
 
-Robust variance estimation (RVE) methods using `robumeta` 
+Robust variance estimation (RVE) methods using `robumeta`. This is a _correlated effects model_.
 
 Hedges, L. V., Tipton, E., & Johnson, M. C. (2010). Robust variance estimation in meta‐regression with dependent effect size estimates. Research synthesis methods, 1(1), 39-65.
 
@@ -28,31 +28,49 @@ Documentation: <https://cran.r-project.org/web/packages/robumeta/robumeta.pdf>
 
 ### `robumeta::robu` model
 
+With correlated weighting
+
 ```{r}
 model.r <- robu(formula = g.post_t2 ~ 1, 
-                 data = df, 
-                 studynum = studyID, 
-                 var.eff.size = varG.post_t2, 
-                 rho = .8,
-                 small = T)
+                data = df, 
+                studynum = studyID, 
+                var.eff.size = varG.post_t2, 
+                rho = .8,
+                modelWeights = "CORR",
+                small = T)
 
 print(model.r)
-sensitivity(model.r)
+```
+
+With hierarchical weighting
+
+```{r}
+model.r <- robu(formula = g.post_t2 ~ 1, 
+                data = df, 
+                studynum = studyID, 
+                var.eff.size = varG.post_t2, 
+                rho = .8,
+                modelWeights = "HIER",
+                small = T)
+
+print(model.r)
 ```
 
 ## `metafor`
 
-Mixed-effects model with additioal robust variance estimation using `metafor`
+Mixed-effects model with robust variance estimation using `metafor`. This is a _hierarchical model_.
 
 Reference: <https://www.metafor-project.org/doku.php/analyses>
 
-Documentation: <https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv> _See for ANOVA/Wald tests_
+Documentation: <https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv> _(see for ANOVA/Wald tests)_
 
 Additional reference: <https://wviechtb.github.io/metafor/reference/rma.mv.html>
 
 Additional tutorial: <https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html>
 
 On difference between `metafor` and `robumeta`: <https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html>
+
+See also: <https://cran.r-project.org/web/packages/clubSandwich/vignettes/meta-analysis-with-CRVE.html>
 
 ### `metafor::rma.mv` model
 

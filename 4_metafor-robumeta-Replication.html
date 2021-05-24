@@ -378,18 +378,20 @@ df &lt;- readRDS(&quot;C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body 
 <h1>Meta-analysis</h1>
 <div id="robumeta" class="section level2">
 <h2><code>robumeta</code></h2>
-<p>Robust variance estimation (RVE) methods using <code>robumeta</code></p>
+<p>Robust variance estimation (RVE) methods using <code>robumeta</code>. This is a <em>correlated effects model</em>.</p>
 <p>Hedges, L. V., Tipton, E., &amp; Johnson, M. C. (2010). Robust variance estimation in meta‐regression with dependent effect size estimates. Research synthesis methods, 1(1), 39-65.</p>
 <p>Vignette: <a href="https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf</a></p>
 <p>Documentation: <a href="https://cran.r-project.org/web/packages/robumeta/robumeta.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/robumeta.pdf</a></p>
 <div id="robumetarobu-model" class="section level3">
 <h3><code>robumeta::robu</code> model</h3>
+<p>With correlated weighting</p>
 <pre class="r"><code>model.r &lt;- robu(formula = g.post_t2 ~ 1, 
-                 data = df, 
-                 studynum = studyID, 
-                 var.eff.size = varG.post_t2, 
-                 rho = .8,
-                 small = T)
+                data = df, 
+                studynum = studyID, 
+                var.eff.size = varG.post_t2, 
+                rho = .8,
+                modelWeights = &quot;CORR&quot;,
+                small = T)
 
 print(model.r)</code></pre>
 <pre><code>## RVE: Correlated Effects Model with Small-Sample Corrections 
@@ -408,27 +410,39 @@ print(model.r)</code></pre>
 ## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
 ## ---
 ## Note: If df &lt; 4, do not trust the results</code></pre>
-<pre class="r"><code>sensitivity(model.r)</code></pre>
+<p>With hierarchical weighting</p>
+<pre class="r"><code>model.r &lt;- robu(formula = g.post_t2 ~ 1, 
+                data = df, 
+                studynum = studyID, 
+                var.eff.size = varG.post_t2, 
+                rho = .8,
+                modelWeights = &quot;HIER&quot;,
+                small = T)
+
+print(model.r)</code></pre>
 <pre><code>## RVE: Correlated Effects Model with Small-Sample Corrections 
+## 
 ## Model: g.post_t2 ~ 1 
 ## 
-## Sensitivity Analysis 
+## Number of studies = 12 
+## Number of outcomes = 19 (min = 1 , mean = 1.58 , median = 1 , max = 4 )
+## Rho = 0.8 
+## I.sq = 61.22859 
+## Tau.sq = 0.02194864 
 ## 
-##                           Rho = 0 Rho = 0.2 Rho = 0.4 Rho = 0.6 Rho = 0.8
-##  X.Intercept. Coefficient -0.2192 -0.2193   -0.2193   -0.2194   -0.2195  
-##               Std. Error   0.0604  0.0605    0.0605    0.0605    0.0605  
-##  Tau.sq       Estimate     0.0218  0.0218    0.0219    0.0219    0.0219  
-##  Rho = 1
-##  -0.2196
-##   0.0605
-##   0.0220</code></pre>
+##                Estimate StdErr t-value dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
+## 1 X.Intercept.   -0.219 0.0605   -3.63 8.7 0.00582   -0.357  -0.0819 ***
+## ---
+## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
+## ---
+## Note: If df &lt; 4, do not trust the results</code></pre>
 </div>
 </div>
 <div id="metafor" class="section level2">
 <h2><code>metafor</code></h2>
-<p>Mixed-effects model with additioal robust variance estimation using <code>metafor</code></p>
+<p>Mixed-effects model with robust variance estimation using <code>metafor</code>. This is a <em>hierarchical model</em>.</p>
 <p>Reference: <a href="https://www.metafor-project.org/doku.php/analyses" class="uri">https://www.metafor-project.org/doku.php/analyses</a></p>
-<p>Documentation: <a href="https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv" class="uri">https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv</a> <em>See for ANOVA/Wald tests</em></p>
+<p>Documentation: <a href="https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv" class="uri">https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv</a> <em>(see for ANOVA/Wald tests)</em></p>
 <p>Additional reference: <a href="https://wviechtb.github.io/metafor/reference/rma.mv.html" class="uri">https://wviechtb.github.io/metafor/reference/rma.mv.html</a></p>
 <p>Additional tutorial: <a href="https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html" class="uri">https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html</a></p>
 <p>On difference between <code>metafor</code> and <code>robumeta</code>: <a href="https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html" class="uri">https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html</a></p>
