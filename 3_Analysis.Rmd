@@ -78,6 +78,8 @@ model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
 print(model.post.IO_t2)
 ```
 
+Forest plot: 
+
 ```{r}
 out <- df %>%
   mutate(est = g.post_t2,
@@ -131,6 +133,99 @@ ggplot(out,
                aes(x = x, y = y),
                inherit.aes = F,
                fill = "black")
+```
+
+Risk of bias assessment:
+
+We will assess publication bias with a funnel plot and Egger test (using regtest in R). Since we cannot use `regtest` with `rma.mv`, we will instead use the SE of each effect size as a moderator and test that model.
+
+```{r}
+rma.mv(yi = g.post_t2 ~ 1 + sqrt(varG.post_t2),
+       V = varG.post_t2,
+       random = ~ 1 | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
+In addition, we will test the following as moderators:
+
+- Blind assignment to study group
+
+```{r}
+df %>%
+  filter(!duplicated(studyID)) %>%
+  count(blindAssign)
+```
+
+- Presence of treatment manual
+
+```{r}
+df %>%
+  filter(!duplicated(studyID)) %>%
+  count(manual)
+```
+
+- Presence of pre-intervention training
+
+```{r}
+df %>%
+  filter(!duplicated(studyID)) %>%
+  count(preTraining)
+```
+
+- Presence of adherence checks
+
+```{r}
+df %>%
+  filter(!duplicated(studyID)) %>%
+  count(supervision)
+
+rma.mv(yi = g.post_t2 ~ 1 + supervision,
+       V = varG.post_t2,
+       random = ~ 1 | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
+- Participant attrition
+
+```{r}
+rma.mv(yi = g.post_t2 ~ 1 + studyCompletion.post,
+       V = varG.post_t2,
+       random = ~ 1 | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
+```{r}
+est = model.post.IO_t2$b[[1]]
+se = sqrt(df$varG.post_t2)
+```
+
+```{r}
+seMax = max(se)
+
+#line 1
+a1 = c(est, 0)
+b1 = c(est + 1.96 * seMax, seMax)
+m1 = (b1[2] - a1[2]) / (b1[1] - a1[1])
+b1 = -est * m1
+
+#line 2
+a2 = c(est, 0)
+b2 = c(est - 1.96 * seMax, seMax)
+m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
+b2 = -est * m2
+
+df %>%
+  ggplot(aes(g.post_t2, sqrt(varG.post_t2))) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
+  geom_vline(xintercept = est) +
+  geom_abline(intercept = b1, slope = m1, linetype = 2) +
+  geom_abline(intercept = b2, slope = m2, linetype = 2) +
+  theme_classic()
 ```
 
 #### Using pre- and post-test data
