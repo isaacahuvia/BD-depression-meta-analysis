@@ -142,6 +142,8 @@ Moderation tests for each of the following variables (pre-registered), including
 
 See for minimum n/group in moderator test: <https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis>
 
+Consider decomposing effects of effect-level and study-level moderation (see page 13, <https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf>)
+
 Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`
 
 Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`

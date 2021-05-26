@@ -378,7 +378,7 @@ df &lt;- readRDS(&quot;C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body 
 <h1>Meta-analysis</h1>
 <div id="robumeta" class="section level2">
 <h2><code>robumeta</code></h2>
-<p>Robust variance estimation (RVE) methods using <code>robumeta</code>. This is a <em>correlated effects model</em>.</p>
+<p>Robust variance estimation (RVE) methods using <code>robumeta</code>. <code>robu</code> can be used to estimate correlated and hierarchical effects models using the original (Hedges, Tipton and Johnson, 2010) and small-sample corrected (Tipton, 2013) RVE methods. Here “correlated” and “hierarchical” appear to refer to weighting schemes.</p>
 <p>Hedges, L. V., Tipton, E., &amp; Johnson, M. C. (2010). Robust variance estimation in meta‐regression with dependent effect size estimates. Research synthesis methods, 1(1), 39-65.</p>
 <p>Vignette: <a href="https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf</a></p>
 <p>Documentation: <a href="https://cran.r-project.org/web/packages/robumeta/robumeta.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/robumeta.pdf</a></p>
@@ -440,9 +440,10 @@ print(model.r)</code></pre>
 </div>
 <div id="metafor" class="section level2">
 <h2><code>metafor</code></h2>
-<p>Mixed-effects model with robust variance estimation using <code>metafor</code>. This is a <em>hierarchical model</em>.</p>
+<p>Mixed-effects model with robust variance estimation using <code>metafor</code>. This is a <em>mixed effects model</em>.</p>
 <p>Reference: <a href="https://www.metafor-project.org/doku.php/analyses" class="uri">https://www.metafor-project.org/doku.php/analyses</a></p>
 <p>Documentation: <a href="https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv" class="uri">https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv</a> <em>(see for ANOVA/Wald tests)</em></p>
+<p>See citations for Konstantopoulos (2011) and Nakagawa and Santos (2012)</p>
 <p>Additional reference: <a href="https://wviechtb.github.io/metafor/reference/rma.mv.html" class="uri">https://wviechtb.github.io/metafor/reference/rma.mv.html</a></p>
 <p>Additional tutorial: <a href="https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html" class="uri">https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/fitting-a-three-level-model.html</a></p>
 <p>On difference between <code>metafor</code> and <code>robumeta</code>: <a href="https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html" class="uri">https://stat.ethz.ch/pipermail/r-sig-meta-analysis/2017-September/000223.html</a></p>
@@ -480,6 +481,24 @@ print(model.m)</code></pre>
 <div id="no-random-effectsclustering" class="section level4">
 <h4>No random effects/clustering</h4>
 <pre class="r"><code>rma.mv(yi = g.post_t2 ~ 1,
+       V = varG.post_t2,
+       data = df)</code></pre>
+<pre><code>## 
+## Multivariate Meta-Analysis Model (k = 21; method: REML)
+## 
+## Variance Components: none
+## 
+## Test for Heterogeneity:
+## Q(df = 20) = 45.0820, p-val = 0.0011
+## 
+## Model Results:
+## 
+## estimate      se     zval    pval    ci.lb    ci.ub 
+##  -0.1513  0.0237  -6.3969  &lt;.0001  -0.1977  -0.1049  *** 
+## 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>rma.mv(yi = g.post_t2,
        V = varG.post_t2,
        data = df)</code></pre>
 <pre><code>## 
@@ -591,7 +610,7 @@ print(model.m)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficient 1):
 ## F(df1 = 1, df2 = 12) = 15.1846, p-val = 0.0021</code></pre>
-<pre class="r"><code>model.m.mod &lt;- rma.mv(yi = g.post_t2 ~ 1 + factor(controlCond),
+<pre class="r"><code>model.m.mod &lt;- rma.mv(yi = g.post_t2 ~ 1 + controlCond,
                       V = varG.post_t2,
                       random = ~ 1 | studyID,
                       data = df) %&gt;%
@@ -608,14 +627,14 @@ print(model.m.mod)</code></pre>
 ## 
 ## Model Results:
 ## 
-##                                           estimate      se     tval    pval 
-## intrcpt                                    -0.2115  0.0549  -3.8557  0.0032 
-## factor(controlCond)Psychoeducation         -0.0107  0.1117  -0.0959  0.9255 
-## factor(controlCond)Waitlist/no treatment   -0.0103  0.0156  -0.6599  0.5242 
-##                                             ci.lb    ci.ub 
-## intrcpt                                   -0.3337  -0.0893  ** 
-## factor(controlCond)Psychoeducation        -0.2596   0.2381     
-## factor(controlCond)Waitlist/no treatment  -0.0450   0.0244     
+##                                   estimate      se     tval    pval    ci.lb 
+## intrcpt                            -0.2115  0.0549  -3.8557  0.0032  -0.3337 
+## controlCondPsychoeducation         -0.0107  0.1117  -0.0959  0.9255  -0.2596 
+## controlCondWaitlist/no treatment   -0.0103  0.0156  -0.6599  0.5242  -0.0450 
+##                                     ci.ub 
+## intrcpt                           -0.0893  ** 
+## controlCondPsychoeducation         0.2381     
+## controlCondWaitlist/no treatment   0.0244     
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -623,6 +642,88 @@ print(model.m.mod)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficients 2:3):
 ## F(df1 = 2, df2 = 10) = 0.3340, p-val = 0.7237</code></pre>
+<p>Another way to specify moderators</p>
+<pre class="r"><code>rma.mv(yi = g.post_t2,
+       mods = ~ controlCond,
+       V = varG.post_t2,
+       random = ~ 1 | studyID,
+       data = df) %&gt;%
+  robust(cluster = df$studyID)</code></pre>
+<pre><code>## 
+## Number of outcomes:   21
+## Number of clusters:   13
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
+## 
+## Test of Moderators (coefficients 2:3):
+## F(df1 = 2, df2 = 10) = 0.3340, p-val = 0.7237
+## 
+## Model Results:
+## 
+##                                   estimate      se     tval    pval    ci.lb 
+## intrcpt                            -0.2115  0.0549  -3.8557  0.0032  -0.3337 
+## controlCondPsychoeducation         -0.0107  0.1117  -0.0959  0.9255  -0.2596 
+## controlCondWaitlist/no treatment   -0.0103  0.0156  -0.6599  0.5242  -0.0450 
+##                                     ci.ub 
+## intrcpt                           -0.0893  ** 
+## controlCondPsychoeducation         0.2381     
+## controlCondWaitlist/no treatment   0.0244     
+## 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<p>Now with the moderator as a random variable as well… or is this a weird “inner-outer” thing?</p>
+<pre class="r"><code>rma.mv(yi = g.post_t2 ~ 1 + controlCond,
+       V = varG.post_t2,
+       random = ~ 1 + controlCond | studyID,
+       data = df) %&gt;%
+  robust(cluster = df$studyID)</code></pre>
+<pre><code>## 
+## Number of outcomes:   21
+## Number of clusters:   13
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
+## 
+## Test of Moderators (coefficients 2:3):
+## F(df1 = 2, df2 = 10) = 1.9655, p-val = 0.1906
+## 
+## Model Results:
+## 
+##                                   estimate      se      tval    pval    ci.lb 
+## intrcpt                            -0.2909  0.0274  -10.6070  &lt;.0001  -0.3520 
+## controlCondPsychoeducation          0.0687  0.1011    0.6798  0.5121  -0.1565 
+## controlCondWaitlist/no treatment    0.0691  0.0430    1.6081  0.1389  -0.0267 
+##                                     ci.ub 
+## intrcpt                           -0.2298  *** 
+## controlCondPsychoeducation         0.2939      
+## controlCondWaitlist/no treatment   0.1650      
+## 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>rma.mv(yi = g.post_t2,
+       mods = ~ controlCond,
+       V = varG.post_t2,
+       random = ~ 1 + controlCond | studyID,
+       data = df) %&gt;%
+  robust(cluster = df$studyID)</code></pre>
+<pre><code>## 
+## Number of outcomes:   21
+## Number of clusters:   13
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
+## 
+## Test of Moderators (coefficients 2:3):
+## F(df1 = 2, df2 = 10) = 1.9655, p-val = 0.1906
+## 
+## Model Results:
+## 
+##                                   estimate      se      tval    pval    ci.lb 
+## intrcpt                            -0.2909  0.0274  -10.6070  &lt;.0001  -0.3520 
+## controlCondPsychoeducation          0.0687  0.1011    0.6798  0.5121  -0.1565 
+## controlCondWaitlist/no treatment    0.0691  0.0430    1.6081  0.1389  -0.0267 
+##                                     ci.ub 
+## intrcpt                           -0.2298  *** 
+## controlCondPsychoeducation         0.2939      
+## controlCondWaitlist/no treatment   0.1650      
+## 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 </div>
 </div>
 </div>

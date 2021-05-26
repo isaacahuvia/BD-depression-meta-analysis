@@ -18,7 +18,9 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 
 ## `robumeta`
 
-Robust variance estimation (RVE) methods using `robumeta`. This is a _correlated effects model_.
+Robust variance estimation (RVE) methods using `robumeta`. `robu` can
+be used to estimate correlated and hierarchical effects models using the original (Hedges, Tipton
+and Johnson, 2010) and small-sample corrected (Tipton, 2013) RVE methods. Here "correlated" and "hierarchical" appear to refer to weighting schemes.
 
 Hedges, L. V., Tipton, E., & Johnson, M. C. (2010). Robust variance estimation in meta‐regression with dependent effect size estimates. Research synthesis methods, 1(1), 39-65.
 
@@ -58,11 +60,13 @@ print(model.r)
 
 ## `metafor`
 
-Mixed-effects model with robust variance estimation using `metafor`. This is a _hierarchical model_.
+Mixed-effects model with robust variance estimation using `metafor`. This is a _mixed effects model_.
 
 Reference: <https://www.metafor-project.org/doku.php/analyses>
 
 Documentation: <https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv> _(see for ANOVA/Wald tests)_
+
+See citations for Konstantopoulos (2011) and Nakagawa and Santos (2012)
 
 Additional reference: <https://wviechtb.github.io/metafor/reference/rma.mv.html>
 
@@ -99,6 +103,12 @@ df <- df %>%
 
 ```{r}
 rma.mv(yi = g.post_t2 ~ 1,
+       V = varG.post_t2,
+       data = df)
+```
+
+```{r}
+rma.mv(yi = g.post_t2,
        V = varG.post_t2,
        data = df)
 ```
@@ -146,7 +156,7 @@ rma.mv(yi = g.post_t2 ~ 1,
 ```{r}
 anova.rma(model.m)
 
-model.m.mod <- rma.mv(yi = g.post_t2 ~ 1 + factor(controlCond),
+model.m.mod <- rma.mv(yi = g.post_t2 ~ 1 + controlCond,
                       V = varG.post_t2,
                       random = ~ 1 | studyID,
                       data = df) %>%
@@ -155,3 +165,34 @@ model.m.mod <- rma.mv(yi = g.post_t2 ~ 1 + factor(controlCond),
 print(model.m.mod)
 anova.rma(model.m.mod)
 ```
+
+Another way to specify moderators
+
+```{r}
+rma.mv(yi = g.post_t2,
+       mods = ~ controlCond,
+       V = varG.post_t2,
+       random = ~ 1 | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
+Now with the moderator as a random variable as well... or is this a weird "inner-outer" thing?
+
+```{r}
+rma.mv(yi = g.post_t2 ~ 1 + controlCond,
+       V = varG.post_t2,
+       random = ~ 1 + controlCond | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
+```{r}
+rma.mv(yi = g.post_t2,
+       mods = ~ controlCond,
+       V = varG.post_t2,
+       random = ~ 1 + controlCond | studyID,
+       data = df) %>%
+  robust(cluster = df$studyID)
+```
+
