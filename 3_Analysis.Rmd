@@ -18,6 +18,22 @@ libraries("tidyverse", "metafor", "magrittr", "knitr", "kableExtra")
 df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
 
 
+## Update Effect Labels
+df <- df %>%
+  group_by(studyID) %>%
+  mutate(t.group.i = match(t.groupDetailed, unique(t.groupDetailed)),
+         c.group.i = match(c.groupDetailed, unique(c.groupDetailed)),
+         t.group.n = length(unique(t.group.i)),
+         c.group.n = length(unique(c.group.i)),
+         t.groupNew = paste0("Trt (", t.group.i, ")"),
+         c.groupNew = paste0("Ctrl (", c.group.i, ")"),
+         t.groupAlt = if_else(t.group.n > 1, paste0("Trt (", t.group.i, ")"), "Trt"),
+         c.groupAlt = if_else(c.group.n > 1, paste0("Ctrl (", c.group.i, ")"), "Ctrl")) %>%
+  ungroup() %>%
+  mutate(effectLabelNew = paste0(t.groupNew, " vs. ", c.groupNew, ", ", outcome),
+         effectLabelAlt = paste0(t.groupAlt, " vs. ", c.groupAlt, ", ", outcome))
+
+
 ## Prepare Follow-up Data
 #Reshape to long dataset, code for follow-up time-point, and keep only follow-up outcomes
 df.fu <- df %>%
@@ -34,6 +50,8 @@ df.fu <- df %>%
                     values_from = "value") %>%
         drop_na(time) %>%
         mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"),
+               effectLabelNew = paste0(effectLabelNew, " (", time, " weeks)"),
+               effectLabelAlt = paste0(effectLabelAlt, " (", time, " weeks)"),
                followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
                                           time <= 12 ~ "Between 3 and 12 weeks",
                                           time > 12 ~ "Greater than 12 weeks"))
@@ -73,19 +91,19 @@ forest(model.post.IO_t2,
 
 My forest plot
 
-```{r, fig.width = 9}
+```{r}
 out <- df %>%
   mutate(est = g.post_t2,
          lower = g.post_t2 - (1.96 * sqrt(varG.post_t2)),
          upper = g.post_t2 + (1.96 * sqrt(varG.post_t2)),
          n = t.post.n + c.post.n,
          article = factor(article)) %>%
-  select(article, effectLabel, est, lower, upper, n)
+  select(article, effectLabelAlt, est, lower, upper, n)
 
 out <- rbind(out,
              tibble(
                article = "Overall Estimate",
-               effectLabel = "Overall Estimate",
+               effectLabelAlt = "Overall Estimate",
                est = NA, #model.post.IO_t2$b[1,1],
                lower = NA, #model.post.IO_t2$ci.lb,
                upper = NA, #model.post.IO_t2$ci.ub
@@ -100,13 +118,15 @@ diamond <- data.frame(x = c(model.post.IO_t2$ci.ub,
                       article = "Overall Estimate")
 
 ggplot(out, 
-       aes(y = effectLabel, 
+       aes(y = effectLabelAlt, 
            x = est,
            xmin = lower,
            xmax = upper)) +
-  geom_point(aes(size = n), shape = "square") +
+  geom_point(aes(size = n), 
+             shape = "square") +
   geom_errorbarh() +
-  scale_y_discrete(name = NULL) + #Set breaks = NULL to remove effect labels
+  scale_y_discrete(name = NULL, 
+                   limits = rev) + #Set breaks = NULL to remove effect labels
   scale_x_continuous(name = "Hedge's g") +
   scale_size_continuous(range = c(1, 4)) +
   facet_grid(article ~ .,
@@ -120,8 +140,10 @@ ggplot(out,
         axis.line.x = element_line(size = .5, color = "black"),
         axis.ticks.y.left = element_blank()) +
   geom_vline(xintercept = 0, linetype = 2) +
-  geom_polygon(data = diamond, inherit.aes = F,
-               aes(x = x, y = y))
+  geom_polygon(data = diamond, 
+               aes(x = x, y = y),
+               inherit.aes = F,
+               fill = "black")
 ```
 
 #### Using pre- and post-test data
@@ -333,19 +355,19 @@ forest(model.fu.IO_t2,
 
 My forest plot
 
-```{r, fig.width = 9}
+```{r}
 out <- df.fu %>%
   mutate(est = g.fu_t2,
          lower = g.fu_t2 - (1.96 * sqrt(varG.fu_t2)),
          upper = g.fu_t2 + (1.96 * sqrt(varG.fu_t2)),
          n = nt + nc,
          article = factor(article)) %>%
-  select(article, effectLabel, est, lower, upper, n)
+  select(article, effectLabelAlt, est, lower, upper, n)
 
 out <- rbind(out,
              tibble(
                article = "Overall Estimate",
-               effectLabel = "Overall Estimate",
+               effectLabelAlt = "Overall Estimate",
                est = NA, #model.fu.IO_t2$b[1,1],
                lower = NA, #model.fu.IO_t2$ci.lb,
                upper = NA, #model.fu.IO_t2$ci.ub
@@ -360,13 +382,15 @@ diamond <- data.frame(x = c(model.fu.IO_t2$ci.ub,
                       article = "Overall Estimate")
 
 ggplot(out, 
-       aes(y = effectLabel, 
+       aes(y = effectLabelAlt, 
            x = est,
            xmin = lower,
            xmax = upper)) +
-  geom_point(aes(size = n), shape = "square") +
+  geom_point(aes(size = n), 
+             shape = "square") +
   geom_errorbarh() +
-  scale_y_discrete(name = NULL) + #Set breaks = NULL to remove effect labels
+  scale_y_discrete(name = NULL, 
+                   limits = rev) + #Set breaks = NULL to remove effect labels
   scale_x_continuous(name = "Hedge's g") +
   scale_size_continuous(range = c(1, 4)) +
   facet_grid(article ~ .,
@@ -380,8 +404,10 @@ ggplot(out,
         axis.line.x = element_line(size = .5, color = "black"),
         axis.ticks.y.left = element_blank()) +
   geom_vline(xintercept = 0, linetype = 2) +
-  geom_polygon(data = diamond, inherit.aes = F,
-               aes(x = x, y = y))
+  geom_polygon(data = diamond, 
+               aes(x = x, y = y),
+               inherit.aes = F,
+               fill = "black")
 ```
 
 #### Using pre-test and follow-up data

@@ -642,6 +642,38 @@ print(model.m.mod)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficients 2:3):
 ## F(df1 = 2, df2 = 10) = 0.3340, p-val = 0.7237</code></pre>
+<p>With continuous moderator</p>
+<pre class="r"><code>anova.rma(model.m)</code></pre>
+<pre><code>## 
+## Test of Moderators (coefficient 1):
+## F(df1 = 1, df2 = 12) = 15.1846, p-val = 0.0021</code></pre>
+<pre class="r"><code>model.m.mod &lt;- rma.mv(yi = g.post_t2 ~ 1 + year,
+                      V = varG.post_t2,
+                      random = ~ 1 | studyID,
+                      data = df) %&gt;%
+  robust(cluster = df$studyID)
+
+print(model.m.mod)</code></pre>
+<pre><code>## 
+## Number of outcomes:   21
+## Number of clusters:   13
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
+## 
+## Test of Moderators (coefficient 2):
+## F(df1 = 1, df2 = 11) = 0.0816, p-val = 0.7804
+## 
+## Model Results:
+## 
+##          estimate       se     tval    pval     ci.lb    ci.ub 
+## intrcpt   -9.0663  30.9534  -0.2929  0.7751  -77.1943  59.0618    
+## year       0.0044   0.0154   0.2857  0.7804   -0.0295   0.0383    
+## 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>anova.rma(model.m.mod)</code></pre>
+<pre><code>## 
+## Test of Moderators (coefficient 2):
+## F(df1 = 1, df2 = 11) = 0.0816, p-val = 0.7804</code></pre>
 <p>Another way to specify moderators</p>
 <pre class="r"><code>rma.mv(yi = g.post_t2,
        mods = ~ controlCond,
