@@ -78,7 +78,19 @@ model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
 print(model.post.IO_t2)
 ```
 
-Forest plot: 
+#### Using pre- and post-test data
+
+```{r}
+model.post.IO_t1t2 <- rma.mv(yi = g.post_t1t2 ~ 1,
+                             V = varG.post_t1t2,
+                             random = ~ 1 | studyID,
+                             data = df) %>%
+  robust(cluster = df$studyID)
+
+print(model.post.IO_t1t2)
+```
+
+### Forest plot: 
 
 ```{r}
 out <- df %>%
@@ -135,75 +147,28 @@ ggplot(out,
                fill = "black")
 ```
 
-Risk of bias assessment:
+### Risk of bias assessment
 
-We will assess publication bias with a funnel plot and Egger test (using regtest in R). Since we cannot use `regtest` with `rma.mv`, we will instead use the SE of each effect size as a moderator and test that model.
+We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
 
 ```{r}
-rma.mv(yi = g.post_t2 ~ 1 + sqrt(varG.post_t2),
+df <- df %>%
+  mutate(seG.post_t2 = sqrt(varG.post_t2),
+         gStd.post_t2 = g.post_t2 / seG.post_t2,
+         precision.post_t2 = 1 / seG.post_t2)
+
+rma.mv(yi = gStd.post_t2 ~ 1 + precision.post_t2,
        V = varG.post_t2,
        random = ~ 1 | studyID,
        data = df) %>%
   robust(cluster = df$studyID)
 ```
 
-In addition, we will test the following as moderators:
-
-- Blind assignment to study group
-
-```{r}
-df %>%
-  filter(!duplicated(studyID)) %>%
-  count(blindAssign)
-```
-
-- Presence of treatment manual
-
-```{r}
-df %>%
-  filter(!duplicated(studyID)) %>%
-  count(manual)
-```
-
-- Presence of pre-intervention training
-
-```{r}
-df %>%
-  filter(!duplicated(studyID)) %>%
-  count(preTraining)
-```
-
-- Presence of adherence checks
-
-```{r}
-df %>%
-  filter(!duplicated(studyID)) %>%
-  count(supervision)
-
-rma.mv(yi = g.post_t2 ~ 1 + supervision,
-       V = varG.post_t2,
-       random = ~ 1 | studyID,
-       data = df) %>%
-  robust(cluster = df$studyID)
-```
-
-- Participant attrition
-
-```{r}
-rma.mv(yi = g.post_t2 ~ 1 + studyCompletion.post,
-       V = varG.post_t2,
-       random = ~ 1 | studyID,
-       data = df) %>%
-  robust(cluster = df$studyID)
-```
+In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
 
 ```{r}
 est = model.post.IO_t2$b[[1]]
-se = sqrt(df$varG.post_t2)
-```
-
-```{r}
-seMax = max(se)
+seMax = max(df$seG.post_t2)
 
 #line 1
 a1 = c(est, 0)
@@ -218,7 +183,7 @@ m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
 b2 = -est * m2
 
 df %>%
-  ggplot(aes(g.post_t2, sqrt(varG.post_t2))) +
+  ggplot(aes(g.post_t2, seG.post_t2)) +
   geom_point() +
   scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
   scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
@@ -228,16 +193,16 @@ df %>%
   theme_classic()
 ```
 
-#### Using pre- and post-test data
-
 ```{r}
-model.post.IO_t1t2 <- rma.mv(yi = g.post_t1t2 ~ 1,
-                             V = varG.post_t1t2,
-                             random = ~ 1 | studyID,
-                             data = df) %>%
-  robust(cluster = df$studyID)
+df$n = df$c.pre.n + df$t.pre.n
 
-print(model.post.IO_t1t2)
+df %>%
+  ggplot(aes(g.post_t2, n)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_continuous(name = "n") +
+  geom_vline(xintercept = est) +
+  theme_classic()
 ```
 
 ### Moderation tests
@@ -252,10 +217,13 @@ Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `mean
 
 Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
 
+Moderators tested for quality assessment: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
+
 Dropped due to zero variation:
 
 - `pctSexualMinority`: All `NA`
 - `respondent`: All "Youth-reported"
+- `manual`: All "Treatment manual used" or `NA`
 - `preTraining`: All "Present" or `NA`
 
 Dropped because only one category had >= 3 studies:
@@ -266,6 +234,7 @@ Dropped because only one category had >= 3 studies:
 - `target`: Only 2 not "Body dissatisfaction"
 - `interventionParticipant`: Only 2 not "Youth"
 - `meanType`: Only 1 not "Unadjusted"
+- `blindAssign`: Only 1 not "No blind assignment"
 
 Collapsed categories to allow for analysis: _(Neither of these ping as significant; maybe don't collapse categories)_
 
@@ -273,7 +242,19 @@ Collapsed categories to allow for analysis: _(Neither of these ping as significa
 - `provider`: "Self-administered" (1) and "Lay-administered" (2) combined into "Non-clinician-administered"
 
 ```{r}
-moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion.post", "interventionParticipant", "meanType", "randUnits")
+moderators <- c(
+  #Study characteristics
+  "year", "pubStatus", "country", 
+  #Sampling
+  "sampleSource", "interventionType", "riskScreen", 
+  #Population
+  "meanAge", "pctFemale", "pctNonwhite", 
+  #Intervention
+  "target", "provider", "interventionParticipant", "deliveryFormat", "length.minutes", "length.sessions", "length.days", "trtCompletion", "controlCond",
+  #Outcome
+  "outcome",
+  #Quality assessment
+  "blindAssign", "manual", "supervision", "studyCompletion.post", "meanType", "randUnits")
 
 df <- df %>%
   mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond),
@@ -426,6 +407,20 @@ model.fu.IO_t2 <- rma.mv(yi = g.fu_t2 ~ 1,
 print(model.fu.IO_t2)
 ```
 
+#### Using pre-test and follow-up data
+
+```{r}
+model.fu.IO_t1t2 <- rma.mv(yi = g.fu_t1t2 ~ 1,
+                           V = varG.fu_t1t2,
+                           random = ~ 1 | studyID,
+                           data = df.fu) %>%
+  robust(cluster = df.fu$studyID)
+
+print(model.fu.IO_t1t2)
+```
+
+### Forest plot
+
 ```{r}
 out <- df.fu %>%
   mutate(est = g.fu_t2,
@@ -481,30 +476,79 @@ ggplot(out,
                fill = "black")
 ```
 
-#### Using pre-test and follow-up data
+### Risk of bias assessment
+
+We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
 
 ```{r}
-model.fu.IO_t1t2 <- rma.mv(yi = g.fu_t1t2 ~ 1,
-                           V = varG.fu_t1t2,
-                           random = ~ 1 | studyID,
-                           data = df.fu) %>%
-  robust(cluster = df.fu$studyID)
+df.fu <- df.fu %>%
+  mutate(seG.fu_t2 = sqrt(varG.fu_t2),
+         gStd.fu_t2 = g.fu_t2 / seG.fu_t2,
+         precision.fu_t2 = 1 / seG.fu_t2)
 
-print(model.fu.IO_t1t2)
+rma.mv(yi = gStd.fu_t2 ~ 1 + precision.fu_t2,
+       V = varG.fu_t2,
+       random = ~ 1 | studyID,
+       data = df.fu) %>%
+  robust(cluster = df.fu$studyID)
+```
+
+In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
+
+```{r}
+est = model.fu.IO_t2$b[[1]]
+seMax = max(df.fu$seG.fu_t2)
+
+#line 1
+a1 = c(est, 0)
+b1 = c(est + 1.96 * seMax, seMax)
+m1 = (b1[2] - a1[2]) / (b1[1] - a1[1])
+b1 = -est * m1
+
+#line 2
+a2 = c(est, 0)
+b2 = c(est - 1.96 * seMax, seMax)
+m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
+b2 = -est * m2
+
+df.fu %>%
+  ggplot(aes(g.fu_t2, seG.fu_t2)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
+  geom_vline(xintercept = est) +
+  geom_abline(intercept = b1, slope = m1, linetype = 2) +
+  geom_abline(intercept = b2, slope = m2, linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+df.fu$n = df.fu$nc + df.fu$nt
+
+df.fu %>%
+  ggplot(aes(g.fu_t2, n)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_continuous(name = "n") +
+  geom_vline(xintercept = est) +
+  theme_classic()
 ```
 
 ### Moderation tests
 
 Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
 
-Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`, `followUpLength`
+Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion`, `followUpLength`
 
 Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
+
+Moderators tested for quality assessment: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion`
 
 Dropped due to zero variation:
 
 - `pctSexualMinority`: All `NA`
 - `respondent`: All "Youth-reported"
+- `manual`: All "Treatment manual used" or `NA`
 - `preTraining`: All "Present" or `NA`
 
 Dropped because only one category had >= 3 studies:
@@ -516,13 +560,26 @@ Dropped because only one category had >= 3 studies:
 - `provider`: Only 2 not "Clinician-administered"
 - `interventionParticipant`: Only 2 not "Youth"
 - `meanType`: Only 1 not "Unadjusted"
+- `blindAssign`: Only 1 not "No blind assignment"
 
 Collapsed categories to allow for analysis: _(Not significant; maybe don't collapse categories)_
 
 - `controlCond`: "Psychoeducation" (2) and "Other" (1) combined into "Active control"
 
 ```{r}
-moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion", "interventionParticipant", "meanType", "followUpLength", "randUnits")
+moderators <- c(
+  #Study characteristics
+  "year", "pubStatus", "country", 
+  #Sampling
+  "sampleSource", "interventionType", "riskScreen", 
+  #Population
+  "meanAge", "pctFemale", "pctNonwhite", 
+  #Intervention
+  "target", "provider", "interventionParticipant", "deliveryFormat", "length.minutes", "length.sessions", "length.days", "trtCompletion", "controlCond",
+  #Outcome
+  "outcome", "followUpLength",
+  #Quality assessment
+  "blindAssign", "manual", "supervision", "studyCompletion", "meanType", "randUnits")
 
 df.fu <- df.fu %>%
   mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond))
