@@ -68,7 +68,7 @@ Default forest plot
 ```{r}
 forest(model.post.IO_t2,
        slab = df$article,
-       order = order(df$article))
+       order = order(df$article, desc(df$effectLabel)))
 ```
 
 My forest plot
@@ -142,14 +142,36 @@ Moderation tests for each of the following variables (pre-registered), including
 
 See for minimum n/group in moderator test: <https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis>
 
+Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`
+
 Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
 
-Dropped due to zero variation: `pctSexualMinority` (all `NA`), `respondent` (all youth-reported), `preTraining` (all present or `NA`)
+Dropped due to zero variation:
 
-Dropped because only one category had >= 3 studies: 
+- `pctSexualMinority`: All `NA`
+- `respondent`: All "Youth-reported"
+- `preTraining`: All "Present" or `NA`
+
+Dropped because only one category had >= 3 studies:
+
+- `pubStatus`: Only 1 not "Peer-reviewed"
+- `sampleSource`: Only 1 not "Community sample"
+- `delieryFormat`: Only 2 not "Group" 
+- `target`: Only 2 not "Body dissatisfaction"
+- `interventionParticipant`: Only 2 not "Youth"
+- `meanType`: Only 1 not "Unadjusted"
+
+Collapsed categories to allow for analysis: _(Neither of these ping as significant; maybe don't collapse categories)_
+
+- `controlCond`: "Psychoeducation" (2) and "Other" (1) combined into "Active control"
+- `provider`: "Self-administered" (1) and "Lay-administered" (2) combined into "Non-clinician-administered"
 
 ```{r}
 moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion.post", "interventionParticipant", "meanType", "randUnits")
+
+df <- df %>%
+  mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond),
+         provider = if_else(provider %in% c("Lay-administered", "Self-administered"), "Non-clinician-administered", provider))
 
 out <- tibble(
   moderator = NA_character_,
@@ -304,7 +326,7 @@ Default forest plot
 ```{r}
 forest(model.fu.IO_t2,
        slab = df.fu$article,
-       order = order(df.fu$article))
+       order = order(df.fu$article, desc(df.fu$effectLabel)))
 ```
 
 My forest plot
@@ -376,8 +398,35 @@ print(model.fu.IO_t1t2)
 
 Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
 
+Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`, `followUpLength`
+
+Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
+
+Dropped due to zero variation:
+
+- `pctSexualMinority`: All `NA`
+- `respondent`: All "Youth-reported"
+- `preTraining`: All "Present" or `NA`
+
+Dropped because only one category had >= 3 studies:
+
+- `pubStatus`: Only 1 not "Peer-reviewed"
+- `sampleSource`: Only 1 not "Community sample"
+- `delieryFormat`: Only 1 not "Group" 
+- `target`: Only 2 not "Body dissatisfaction"
+- `provider`: Only 2 not "Clinician-administered"
+- `interventionParticipant`: Only 2 not "Youth"
+- `meanType`: Only 1 not "Unadjusted"
+
+Collapsed categories to allow for analysis: _(Not significant; maybe don't collapse categories)_
+
+- `controlCond`: "Psychoeducation" (2) and "Other" (1) combined into "Active control"
+
 ```{r}
 moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion", "interventionParticipant", "meanType", "followUpLength", "randUnits")
+
+df.fu <- df.fu %>%
+  mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond))
 
 out <- tibble(
   moderator = NA_character_,
