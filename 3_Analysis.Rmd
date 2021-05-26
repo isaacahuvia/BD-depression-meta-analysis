@@ -62,10 +62,6 @@ df.fu <- df %>%
 
 Mixed-effects model with robust variance estimation using `metafor`
 
-Reference: <https://www.metafor-project.org/doku.php/analyses>
-
-Documentation: <https://www.rdocumentation.org/packages/metafor/versions/2.4-0/topics/rma.mv> _(see for ANOVA/Wald tests)_
-
 ## Post-test effects
 
 ### Intercept-only model
@@ -212,13 +208,13 @@ for(moderator in moderators) {
                   data = df[!is.na(df[[moderator]]),]) %>%
       robust(cluster = df$studyID[!is.na(df[[moderator]])])
     
-    coef = coef(model)[2]
     modTest <- anova.rma(model)
     
+    coef = coef(model)[2]
+    
     test = modTest$test
-    type = modTest$type
     dfs = modTest$dfs
-    stat = modTest$QM
+    stat = model$zval[2]
     p = modTest$QMp
     
     nStudies = length(unique(df$studyID[!is.na(df[[moderator]])]))
@@ -232,7 +228,7 @@ for(moderator in moderators) {
       subgroupEst = NA,
       subgroupP = NA,
       coef = coef,
-      overallStat = stat,
+      overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
       overallP = p
     ))
   
@@ -252,9 +248,8 @@ for(moderator in moderators) {
     
       modTest <- anova.rma(model)
     
-      test = modTest$test
-      type = modTest$type
-      dfs = modTest$dfs
+      test = "F"
+      dfs = paste0(modTest$m, ", ", modTest$dfs)
       stat = modTest$QM
       p = modTest$QMp
       
@@ -266,7 +261,7 @@ for(moderator in moderators) {
         subgroupEst = NA,
         subgroupP = NA,
         coef = NA,
-        overallStat = stat,
+        overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
         overallP = p
       ))
         
@@ -461,13 +456,13 @@ for(moderator in moderators) {
                   data = df.fu[!is.na(df.fu[[moderator]]),]) %>%
       robust(cluster = df.fu$studyID[!is.na(df.fu[[moderator]])])
     
-    coef = coef(model)[2]
     modTest <- anova.rma(model)
     
+    coef = coef(model)[2]
+    
     test = modTest$test
-    type = modTest$type
-    df.fus = modTest$df.fus
-    stat = modTest$QM
+    dfs = modTest$dfs
+    stat = model$zval[2]
     p = modTest$QMp
     
     nStudies = length(unique(df.fu$studyID[!is.na(df.fu[[moderator]])]))
@@ -481,7 +476,7 @@ for(moderator in moderators) {
       subgroupEst = NA,
       subgroupP = NA,
       coef = coef,
-      overallStat = stat,
+      overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
       overallP = p
     ))
   
@@ -501,9 +496,8 @@ for(moderator in moderators) {
     
       modTest <- anova.rma(model)
     
-      test = modTest$test
-      type = modTest$type
-      df.fus = modTest$df.fus
+      test = "F"
+      dfs = paste0(modTest$m, ", ", modTest$dfs)
       stat = modTest$QM
       p = modTest$QMp
       
@@ -515,7 +509,7 @@ for(moderator in moderators) {
         subgroupEst = NA,
         subgroupP = NA,
         coef = NA,
-        overallStat = stat,
+        overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
         overallP = p
       ))
         
