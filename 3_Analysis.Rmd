@@ -3,11 +3,15 @@ title: "3_Analysis"
 output: html_document
 ---
 
+```{r, include = F}
+knitr::opts_chunk$set(echo = F, warning = F)
+```
+
 ```{r, message = F, warning = F}
 ## Startup
 rm(list = ls())
 library(easypackages)
-libraries("tidyverse", "metafor", "magrittr", "knitr")
+libraries("tidyverse", "metafor", "magrittr", "knitr", "kableExtra")
 
 
 ## Load Data
@@ -17,8 +21,9 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 ## Prepare Follow-up Data
 #Reshape to long dataset, code for follow-up time-point, and keep only follow-up outcomes
 df.fu <- df %>%
-        select_at(vars(-matches(".post"))) %>%
-        pivot_longer(cols = time.fu1:varG.fu2_t2,
+  select_at(vars(-matches(".post"))) %>%
+  rename(nt.fu1 = t.fu1.n, nt.fu2 = t.fu2.n, nc.fu1 = c.fu1.n, nc.fu2 = c.fu2.n) %>%
+  pivot_longer(cols = c(studyCompletion.fu1, studyCompletion.fu2, nt.fu1, nt.fu2, nc.fu1, nc.fu2, time.fu1:varG.fu2_t2),
                      names_to = c("var", "followUp"),
                      names_sep = "\\.") %>%
         mutate(var = if_else(var %in% c("d", "varD", "g", "varG"),
@@ -28,7 +33,10 @@ df.fu <- df %>%
         pivot_wider(names_from = "var",
                     values_from = "value") %>%
         drop_na(time) %>%
-        mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"))
+        mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"),
+               followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
+                                          time <= 12 ~ "Between 3 and 12 weeks",
+                                          time > 12 ~ "Greater than 12 weeks"))
 ```
 
 # Meta-analysis
@@ -43,7 +51,7 @@ Documentation: <https://www.rdocumentation.org/packages/metafor/versions/2.4-0/t
 
 ### Intercept-only model
 
-#### POST-TEST DATA ONLY
+#### Using post-test data only
 
 ```{r}
 model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
@@ -65,44 +73,58 @@ forest(model.post.IO_t2,
 
 My forest plot
 
-```{r}
+```{r, fig.width = 9}
 out <- df %>%
   mutate(est = g.post_t2,
          lower = g.post_t2 - (1.96 * sqrt(varG.post_t2)),
-         upper = g.post_t2 + (1.96 * sqrt(varG.post_t2))) %>%
-  select(article, effectLabel, est, lower, upper)
+         upper = g.post_t2 + (1.96 * sqrt(varG.post_t2)),
+         n = t.post.n + c.post.n,
+         article = factor(article)) %>%
+  select(article, effectLabel, est, lower, upper, n)
 
 out <- rbind(out,
              tibble(
-               article = NA,
+               article = "Overall Estimate",
                effectLabel = "Overall Estimate",
-               est = model.post.IO_t2$b[1,1],
-               lower = model.post.IO_t2$ci.lb,
-               upper = model.post.IO_t2$ci.ub
+               est = NA, #model.post.IO_t2$b[1,1],
+               lower = NA, #model.post.IO_t2$ci.lb,
+               upper = NA, #model.post.IO_t2$ci.ub
+               n = NA
              ))
+
+diamond <- data.frame(x = c(model.post.IO_t2$ci.ub, 
+                            model.post.IO_t2$b[1,1], 
+                            model.post.IO_t2$ci.lb, 
+                            model.post.IO_t2$b[1,1]), 
+                      y = c(1, 1.5, 1, .5),
+                      article = "Overall Estimate")
 
 ggplot(out, 
        aes(y = effectLabel, 
            x = est,
            xmin = lower,
            xmax = upper)) +
-  geom_point() +
+  geom_point(aes(size = n), shape = "square") +
   geom_errorbarh() +
   scale_y_discrete(name = NULL) + #Set breaks = NULL to remove effect labels
   scale_x_continuous(name = "Hedge's g") +
+  scale_size_continuous(range = c(1, 4)) +
   facet_grid(article ~ .,
              scales = "free_y",
              space = "free_y",
              switch = "y") +
   theme(strip.placement = "outside",
         strip.text.y.left = element_text(angle = 0),
+        legend.position = "none",
         panel.background = element_rect(fill = NA),
         axis.line.x = element_line(size = .5, color = "black"),
         axis.ticks.y.left = element_blank()) +
-  geom_vline(xintercept = 0, linetype = 2)
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_polygon(data = diamond, inherit.aes = F,
+               aes(x = x, y = y))
 ```
 
-#### USING PRE- AND POST-TEST DATA
+#### Using pre- and post-test data
 
 ```{r}
 model.post.IO_t1t2 <- rma.mv(yi = g.post_t1t2 ~ 1,
@@ -116,16 +138,18 @@ print(model.post.IO_t1t2)
 
 ### Moderation tests
 
-Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
+Moderation tests for each of the following variables (pre-registered), including subgroups with n >= 3 studies (not effect sizes).
 
-***Include levels with < 3 studies in the overall moderator test?***
+See for minimum n/group in moderator test: <https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis>
+
+Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
+
+Dropped due to zero variation: `pctSexualMinority` (all `NA`), `respondent` (all youth-reported), `preTraining` (all present or `NA`)
+
+Dropped because only one category had >= 3 studies: 
 
 ```{r}
-moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion")
-#also interventionParticipant, meanType
-#no pctSexualMinotiry; all NA
-#no respondent; all youth-reported
-#no preTraining; all featured training or NA
+moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion.post", "interventionParticipant", "meanType", "randUnits")
 
 out <- tibble(
   moderator = NA_character_,
@@ -134,32 +158,31 @@ out <- tibble(
   nES = NA_real_,
   subgroupEst = NA_real_,
   subgroupP = NA_real_,
+  coef = NA_real_,
   overallStat = NA_real_,
   overallP = NA_real_
 )
-
-#Temporary workaround for weird error
-df$deliveryFormat[df$deliveryFormat=="Other"] <- NA
 
 for(moderator in moderators) {
   
   class <- class(df[[moderator]])
   
-  temp <- rma.mv(as.formula(paste0("yi = g.post_t2 ~ 1 + ", moderator)),
-                 V = varG.post_t2,
-                 random = ~ 1 | studyID,
-                 data = df[!is.na(df[[moderator]]),]) %>%
-    robust(cluster = df$studyID[!is.na(df[[moderator]])])
-    
-  modTest <- anova.rma(temp)
-    
-  test = modTest$test
-  type = modTest$type
-  dfs = modTest$dfs
-  stat = modTest$QM
-  p = modTest$QMp
-  
   if(class == "numeric") {
+    
+    model <- rma.mv(as.formula(paste0("yi = g.post_t2 ~ 1 + ", moderator)),
+                  V = varG.post_t2,
+                  random = ~ 1 | studyID,
+                  data = df[!is.na(df[[moderator]]),]) %>%
+      robust(cluster = df$studyID[!is.na(df[[moderator]])])
+    
+    coef = coef(model)[2]
+    modTest <- anova.rma(model)
+    
+    test = modTest$test
+    type = modTest$type
+    dfs = modTest$dfs
+    stat = modTest$QM
+    p = modTest$QMp
     
     nStudies = length(unique(df$studyID[!is.na(df[[moderator]])]))
     nES = sum(!is.na(df[[moderator]]))
@@ -171,70 +194,78 @@ for(moderator in moderators) {
       nES = nES,
       subgroupEst = NA,
       subgroupP = NA,
+      coef = coef,
       overallStat = stat,
       overallP = p
     ))
   
-  }
+  } else if(class == "character") {
+    
+    values <- df[[moderator]][!duplicated(df$studyID)]
+    table <- table(values)
+    levels <- names(table)[table >= 3]
   
-  if(class == "character") {
-    
-    levels <- unique(df[[moderator]])
-    
-    out <- rbind(out, tibble(
-      moderator = moderator,
-      level = NA,
-      nStudies = NA,
-      nES = NA,
-      subgroupEst = NA,
-      subgroupP = NA,
-      overallStat = stat,
-      overallP = p
-    ))
-    
-    for(level in levels) {
+    if(length(levels) > 1) {
       
-      nStudies = length(unique(df$studyID[df[[moderator]] %in% level]))
-      nES = sum(df[[moderator]] %in% level)
+      model <- rma.mv(as.formula(paste0("yi = g.post_t2 ~ 1 + ", moderator)),
+                    V = varG.post_t2,
+                    random = ~ 1 | studyID,
+                    data = df[df[[moderator]] %in% levels,]) %>%
+        robust(cluster = df$studyID[df[[moderator]] %in% levels])
     
-      if(nStudies >= 3) {
+      modTest <- anova.rma(model)
+    
+      test = modTest$test
+      type = modTest$type
+      dfs = modTest$dfs
+      stat = modTest$QM
+      p = modTest$QMp
+      
+      out <- rbind(out, tibble(
+        moderator = moderator,
+        level = NA,
+        nStudies = NA,
+        nES = NA,
+        subgroupEst = NA,
+        subgroupP = NA,
+        coef = NA,
+        overallStat = stat,
+        overallP = p
+      ))
         
-          temp <- rma.mv(yi = g.post_t2 ~ 1,
-                 V = varG.post_t2,
-                 random = ~ 1 | studyID,
-                 data = df[df[[moderator]] %in% level,]) %>%
-            robust(cluster = df$studyID[df[[moderator]] %in% level])
-          
-          subgroupEst = temp$b[[1]]
-          subgroupP = temp$pval
-          
-          out <- rbind(out, tibble(
-            moderator = moderator,
-            level = level,
-            nStudies = nStudies,
-            nES = nES,
-            subgroupEst = subgroupEst,
-            subgroupP = subgroupP,
-            overallStat = NA,
-            overallP = NA
-          ))
-          
-      } else if(nStudies < 3) {
+      for(level in levels) {
         
-          out <- rbind(out, tibble(
-            moderator = moderator,
-            level = level,
-            nStudies = nStudies,
-            nES = nES,
-            subgroupEst = NA,
-            subgroupP = NA,
-            overallStat = NA,
-            overallP = NA
-          ))
+        nStudies = length(unique(df$studyID[df[[moderator]] %in% level]))
+        nES = sum(df[[moderator]] %in% level)
+        
+        model <- rma.mv(yi = g.post_t2 ~ 1,
+                        V = varG.post_t2,
+                        random = ~ 1 | studyID,
+                        data = df[df[[moderator]] %in% level,]) %>%
+          robust(cluster = df$studyID[df[[moderator]] %in% level])
+        
+        subgroupEst = model$b[[1]]
+        subgroupP = model$pval
+          
+        out <- rbind(out, tibble(
+          moderator = moderator,
+          level = level,
+          nStudies = nStudies,
+          nES = nES,
+          subgroupEst = subgroupEst,
+          subgroupP = subgroupP,
+          coef = NA,
+          overallStat = NA,
+          overallP = NA
+        ))
         
       }
       
     }
+    
+  } else {
+    
+    stop("Moderator not numeric or character")
     
   }
   
@@ -243,7 +274,11 @@ for(moderator in moderators) {
 out <- out[-1,]
 
 options(knitr.kable.NA = "")
-kable(out, digits = 2)
+kable(out, digits = 3) %>%
+  kable_paper() %>%
+  add_header_above(c(" " = 4, "Subgroup Analysis" = 3, "Moderator Test" = 2)) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 _End of post-test effects analysis._
@@ -252,7 +287,7 @@ _End of post-test effects analysis._
 
 ### Intercept-only model
 
-#### FOLLOW-UP DATA ONLY
+#### Using follow-up data only
 
 ```{r}
 model.fu.IO_t2 <- rma.mv(yi = g.fu_t2 ~ 1,
@@ -264,7 +299,68 @@ model.fu.IO_t2 <- rma.mv(yi = g.fu_t2 ~ 1,
 print(model.fu.IO_t2)
 ```
 
-#### USING PRE- AND POST-TEST DATA
+Default forest plot
+
+```{r}
+forest(model.fu.IO_t2,
+       slab = df.fu$article,
+       order = order(df.fu$article))
+```
+
+My forest plot
+
+```{r, fig.width = 9}
+out <- df.fu %>%
+  mutate(est = g.fu_t2,
+         lower = g.fu_t2 - (1.96 * sqrt(varG.fu_t2)),
+         upper = g.fu_t2 + (1.96 * sqrt(varG.fu_t2)),
+         n = nt + nc,
+         article = factor(article)) %>%
+  select(article, effectLabel, est, lower, upper, n)
+
+out <- rbind(out,
+             tibble(
+               article = "Overall Estimate",
+               effectLabel = "Overall Estimate",
+               est = NA, #model.fu.IO_t2$b[1,1],
+               lower = NA, #model.fu.IO_t2$ci.lb,
+               upper = NA, #model.fu.IO_t2$ci.ub
+               n = NA
+             ))
+
+diamond <- data.frame(x = c(model.fu.IO_t2$ci.ub, 
+                            model.fu.IO_t2$b[1,1], 
+                            model.fu.IO_t2$ci.lb, 
+                            model.fu.IO_t2$b[1,1]), 
+                      y = c(1, 1.5, 1, .5),
+                      article = "Overall Estimate")
+
+ggplot(out, 
+       aes(y = effectLabel, 
+           x = est,
+           xmin = lower,
+           xmax = upper)) +
+  geom_point(aes(size = n), shape = "square") +
+  geom_errorbarh() +
+  scale_y_discrete(name = NULL) + #Set breaks = NULL to remove effect labels
+  scale_x_continuous(name = "Hedge's g") +
+  scale_size_continuous(range = c(1, 4)) +
+  facet_grid(article ~ .,
+             scales = "free_y",
+             space = "free_y",
+             switch = "y") +
+  theme(strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0),
+        legend.position = "none",
+        panel.background = element_rect(fill = NA),
+        axis.line.x = element_line(size = .5, color = "black"),
+        axis.ticks.y.left = element_blank()) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_polygon(data = diamond, inherit.aes = F,
+               aes(x = x, y = y))
+```
+
+#### Using pre-test and follow-up data
 
 ```{r}
 model.fu.IO_t1t2 <- rma.mv(yi = g.fu_t1t2 ~ 1,
@@ -281,7 +377,136 @@ print(model.fu.IO_t1t2)
 Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
 
 ```{r}
+moderators <- c("year", "pubStatus", "country", "sampleSource", "meanAge", "pctFemale", "pctNonwhite", "interventionType", "riskScreen", "outcome", "controlCond", "deliveryFormat", "target", "provider", "supervision", "length.minutes", "length.sessions", "length.days", "trtCompletion", "studyCompletion", "interventionParticipant", "meanType", "followUpLength", "randUnits")
 
+out <- tibble(
+  moderator = NA_character_,
+  level = NA_character_,
+  nStudies = NA_real_,
+  nES = NA_real_,
+  subgroupEst = NA_real_,
+  subgroupP = NA_real_,
+  coef = NA_real_,
+  overallStat = NA_real_,
+  overallP = NA_real_
+)
+
+for(moderator in moderators) {
+  
+  class <- class(df.fu[[moderator]])
+  
+  if(class == "numeric") {
+    
+    model <- rma.mv(as.formula(paste0("yi = g.fu_t2 ~ 1 + ", moderator)),
+                  V = varG.fu_t2,
+                  random = ~ 1 | studyID,
+                  data = df.fu[!is.na(df.fu[[moderator]]),]) %>%
+      robust(cluster = df.fu$studyID[!is.na(df.fu[[moderator]])])
+    
+    coef = coef(model)[2]
+    modTest <- anova.rma(model)
+    
+    test = modTest$test
+    type = modTest$type
+    df.fus = modTest$df.fus
+    stat = modTest$QM
+    p = modTest$QMp
+    
+    nStudies = length(unique(df.fu$studyID[!is.na(df.fu[[moderator]])]))
+    nES = sum(!is.na(df.fu[[moderator]]))
+    
+    out <- rbind(out, tibble(
+      moderator = moderator,
+      level = NA,
+      nStudies = nStudies,
+      nES = nES,
+      subgroupEst = NA,
+      subgroupP = NA,
+      coef = coef,
+      overallStat = stat,
+      overallP = p
+    ))
+  
+  } else if(class == "character") {
+    
+    values <- df.fu[[moderator]][!duplicated(df.fu$studyID)]
+    table <- table(values)
+    levels <- names(table)[table >= 3]
+  
+    if(length(levels) > 1) {
+      
+      model <- rma.mv(as.formula(paste0("yi = g.fu_t2 ~ 1 + ", moderator)),
+                    V = varG.fu_t2,
+                    random = ~ 1 | studyID,
+                    data = df.fu[df.fu[[moderator]] %in% levels,]) %>%
+        robust(cluster = df.fu$studyID[df.fu[[moderator]] %in% levels])
+    
+      modTest <- anova.rma(model)
+    
+      test = modTest$test
+      type = modTest$type
+      df.fus = modTest$df.fus
+      stat = modTest$QM
+      p = modTest$QMp
+      
+      out <- rbind(out, tibble(
+        moderator = moderator,
+        level = NA,
+        nStudies = NA,
+        nES = NA,
+        subgroupEst = NA,
+        subgroupP = NA,
+        coef = NA,
+        overallStat = stat,
+        overallP = p
+      ))
+        
+      for(level in levels) {
+        
+        nStudies = length(unique(df.fu$studyID[df.fu[[moderator]] %in% level]))
+        nES = sum(df.fu[[moderator]] %in% level)
+        
+        model <- rma.mv(yi = g.fu_t2 ~ 1,
+                        V = varG.fu_t2,
+                        random = ~ 1 | studyID,
+                        data = df.fu[df.fu[[moderator]] %in% level,]) %>%
+          robust(cluster = df.fu$studyID[df.fu[[moderator]] %in% level])
+        
+        subgroupEst = model$b[[1]]
+        subgroupP = model$pval
+          
+        out <- rbind(out, tibble(
+          moderator = moderator,
+          level = level,
+          nStudies = nStudies,
+          nES = nES,
+          subgroupEst = subgroupEst,
+          subgroupP = subgroupP,
+          coef = NA,
+          overallStat = NA,
+          overallP = NA
+        ))
+        
+      }
+      
+    }
+    
+  } else {
+    
+    stop("Moderator not numeric or character")
+    
+  }
+  
+}
+
+out <- out[-1,]
+
+options(knitr.kable.NA = "")
+kable(out, digits = 3) %>%
+  kable_paper() %>%
+  add_header_above(c(" " = 4, "Subgroup Analysis" = 3, "Moderator Test" = 2)) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1, valign = "top")
 ```
 
 _End of follow-up effects analysis._

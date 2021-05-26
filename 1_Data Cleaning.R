@@ -58,10 +58,8 @@ df <- raw %>%
                                    Respondent == 2 ~ "Parent-reported",
                                    Respondent == 3 ~ "Clinician-reported",
                                    Respondent == 4 ~ "Other"),
-            randUnits = case_when(Randomized.units < 30 ~ "<30",
-                                  Randomized.units >= 30 ~ ">=30"),
+            randUnits.group = Randomized.units,
             trtCompletion = Completion.rate,
-            studyCompletion = `n.(post)` / `n.(pre)`,
             controlCond = case_when(Control.condition == 1 ~ "Waitlist/no treatment",
                                     Control.condition == 2 ~ "Psychoeducation",
                                     Control.condition == 3 ~ "Placebo",
@@ -114,7 +112,11 @@ df <- raw %>%
   drop_na(post.n:post.sd) %>%
   #Create a unique numeric ID for each article (robu will require a numeric, not character, ID)
   group_by(article) %>%
-  mutate(studyID = cur_group_id()) %>%
+  mutate(studyID = cur_group_id(),
+         studyCompletion.post = 100 * sum(post.n) / sum(pre.n),
+         studyCompletion.fu1 = 100 * sum(fu1.n) / sum(pre.n),
+         studyCompletion.fu2 = 100 * sum(fu2.n) / sum(pre.n),
+         randUnits = if_else(mean(randUnits.group) >= 30, ">= 30 per group", "< 30 per group")) %>%
   ungroup()
 
 
@@ -127,7 +129,7 @@ df.study <- df %>%
     #Study ID (to use as an identifier during merge)
     studyID, 
     #Study variables
-    article:blindAssign, studyCompletion, meanType) %>%
+    article:blindAssign, studyCompletion.post, studyCompletion.fu1, studyCompletion.fu2, randUnits, meanType) %>%
   filter(!duplicated(.))
 
 #df.trt: Group- and measure-level characteristics for treatment groups only
@@ -142,7 +144,7 @@ df.treatment <- df %>%
     #(Because we want to match treatment and control groups that measure the same outcome)
     outcome, measure:respondent,
     #Treatment group information
-    trtCompletion, interventionParticipant:length.days, groupDetailed, randUnits, pre.n:fu2.sd
+    trtCompletion, interventionParticipant:length.days, groupDetailed, pre.n:fu2.sd
     ) %>%
   #Rename variables
   rename_at(vars(groupDetailed:fu2.sd), ~ paste0("t.", .))
@@ -159,7 +161,7 @@ df.control <- df %>%
     #(Because we want to match treatment and control groups that measure the same outcome)
     outcome, measure:respondent,
     #Control group information
-    controlCond, groupDetailed, randUnits, pre.n:fu2.sd
+    controlCond, groupDetailed, pre.n:fu2.sd
   ) %>%
   #Rename variables
   rename_at(vars(groupDetailed:fu2.sd), ~ paste0("c.", .))

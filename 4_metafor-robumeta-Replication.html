@@ -399,13 +399,13 @@ print(model.r)</code></pre>
 ## Model: g.post_t2 ~ 1 
 ## 
 ## Number of studies = 13 
-## Number of outcomes = 41 (min = 1 , mean = 3.15 , median = 2 , max = 6 )
+## Number of outcomes = 21 (min = 1 , mean = 1.62 , median = 1 , max = 4 )
 ## Rho = 0.8 
-## I.sq = 57.69774 
-## Tau.sq = 0.01769347 
+## I.sq = 57.96896 
+## Tau.sq = 0.01777664 
 ## 
-##                Estimate StdErr t-value  dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
-## 1 X.Intercept.   -0.199 0.0522    -3.8 9.29 0.00396   -0.316   -0.081 ***
+##                Estimate StdErr t-value dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
+## 1 X.Intercept.   -0.199 0.0522    -3.8 9.3 0.00395   -0.316  -0.0811 ***
 ## ---
 ## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
 ## ---
@@ -425,13 +425,13 @@ print(model.r)</code></pre>
 ## Model: g.post_t2 ~ 1 
 ## 
 ## Number of studies = 13 
-## Number of outcomes = 41 (min = 1 , mean = 3.15 , median = 2 , max = 6 )
+## Number of outcomes = 21 (min = 1 , mean = 1.62 , median = 1 , max = 4 )
 ## Rho = 0.8 
-## I.sq = 57.69774 
-## Tau.sq = 0.01769347 
+## I.sq = 57.96896 
+## Tau.sq = 0.01777664 
 ## 
-##                Estimate StdErr t-value  dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
-## 1 X.Intercept.   -0.199 0.0522    -3.8 9.29 0.00396   -0.316   -0.081 ***
+##                Estimate StdErr t-value dfs P(|t|&gt;) 95% CI.L 95% CI.U Sig
+## 1 X.Intercept.   -0.199 0.0522    -3.8 9.3 0.00395   -0.316  -0.0811 ***
 ## ---
 ## Signif. codes: &lt; .01 *** &lt; .05 ** &lt; .10 *
 ## ---
@@ -457,14 +457,14 @@ print(model.r)</code></pre>
 
 print(model.m)</code></pre>
 <pre><code>## 
-## Number of outcomes:   41
+## Number of outcomes:   21
 ## Number of clusters:   13
-## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
+##  -0.2145  0.0550  -3.8967  0.0021  -0.3344  -0.0945  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -483,17 +483,17 @@ print(model.m)</code></pre>
        V = varG.post_t2,
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 41; method: REML)
+## Multivariate Meta-Analysis Model (k = 21; method: REML)
 ## 
 ## Variance Components: none
 ## 
 ## Test for Heterogeneity:
-## Q(df = 40) = 72.6552, p-val = 0.0012
+## Q(df = 20) = 45.0820, p-val = 0.0011
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.1265  0.0158  -7.9970  &lt;.0001  -0.1575  -0.0955  *** 
+##  -0.1513  0.0237  -6.3969  &lt;.0001  -0.1977  -0.1049  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -505,17 +505,17 @@ print(model.m)</code></pre>
        W = k / (varG.post_t2_mean),
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 41; method: REML)
+## Multivariate Meta-Analysis Model (k = 21; method: REML)
 ## 
 ## Variance Components: none
 ## 
 ## Test for Heterogeneity:
-## Q(df = 40) = 72.6552, p-val = 0.0012
+## Q(df = 20) = 45.0820, p-val = 0.0011
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.1269  0.0172  -7.3752  &lt;.0001  -0.1606  -0.0931  *** 
+##  -0.1973  0.0265  -7.4603  &lt;.0001  -0.2492  -0.1455  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -527,20 +527,20 @@ print(model.m)</code></pre>
        random = ~ 1 | studyID,
        data = df)</code></pre>
 <pre><code>## 
-## Multivariate Meta-Analysis Model (k = 41; method: REML)
+## Multivariate Meta-Analysis Model (k = 21; method: REML)
 ## 
 ## Variance Components:
 ## 
 ##             estim    sqrt  nlvls  fixed   factor 
-## sigma^2    0.0485  0.2201     13     no  studyID 
+## sigma^2    0.0235  0.1532     13     no  studyID 
 ## 
 ## Test for Heterogeneity:
-## Q(df = 40) = 72.6552, p-val = 0.0012
+## Q(df = 20) = 45.0820, p-val = 0.0011
 ## 
 ## Model Results:
 ## 
 ## estimate      se     zval    pval    ci.lb    ci.ub 
-##  -0.2511  0.0687  -3.6544  0.0003  -0.3857  -0.1164  *** 
+##  -0.2145  0.0555  -3.8652  0.0001  -0.3232  -0.1057  *** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -553,14 +553,14 @@ print(model.m)</code></pre>
        data = df) %&gt;%
   robust(cluster = df$studyID)</code></pre>
 <pre><code>## 
-## Number of outcomes:   41
+## Number of outcomes:   21
 ## Number of clusters:   13
-## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
+##  -0.2145  0.0550  -3.8967  0.0021  -0.3344  -0.0945  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -573,14 +573,14 @@ print(model.m)</code></pre>
        data = df) %&gt;%
   robust(cluster = df$studyID)</code></pre>
 <pre><code>## 
-## Number of outcomes:   41
+## Number of outcomes:   21
 ## Number of clusters:   13
-## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
 ## 
 ## Model Results:
 ## 
 ## estimate      se     tval    pval    ci.lb    ci.ub 
-##  -0.2511  0.0685  -3.6626  0.0033  -0.4004  -0.1017  ** 
+##  -0.2145  0.0550  -3.8967  0.0021  -0.3344  -0.0945  ** 
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
@@ -590,7 +590,7 @@ print(model.m)</code></pre>
 <pre class="r"><code>anova.rma(model.m)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficient 1):
-## F(df1 = 1, df2 = 12) = 13.4150, p-val = 0.0033</code></pre>
+## F(df1 = 1, df2 = 12) = 15.1846, p-val = 0.0021</code></pre>
 <pre class="r"><code>model.m.mod &lt;- rma.mv(yi = g.post_t2 ~ 1 + factor(controlCond),
                       V = varG.post_t2,
                       random = ~ 1 | studyID,
@@ -599,30 +599,30 @@ print(model.m)</code></pre>
 
 print(model.m.mod)</code></pre>
 <pre><code>## 
-## Number of outcomes:   41
+## Number of outcomes:   21
 ## Number of clusters:   13
-## Outcomes per cluster: 1-6 (mean: 3.15, median: 2)
+## Outcomes per cluster: 1-4 (mean: 1.62, median: 1)
 ## 
 ## Test of Moderators (coefficients 2:3):
-## F(df1 = 2, df2 = 10) = 7.0448, p-val = 0.0123
+## F(df1 = 2, df2 = 10) = 0.3340, p-val = 0.7237
 ## 
 ## Model Results:
 ## 
 ##                                           estimate      se     tval    pval 
-## intrcpt                                    -0.2231  0.0767  -2.9072  0.0156 
-## factor(controlCond)Psychoeducation         -0.0374  0.1420  -0.2636  0.7974 
-## factor(controlCond)Waitlist/no treatment   -0.0338  0.0112  -3.0082  0.0132 
+## intrcpt                                    -0.2115  0.0549  -3.8557  0.0032 
+## factor(controlCond)Psychoeducation         -0.0107  0.1117  -0.0959  0.9255 
+## factor(controlCond)Waitlist/no treatment   -0.0103  0.0156  -0.6599  0.5242 
 ##                                             ci.lb    ci.ub 
-## intrcpt                                   -0.3940  -0.0521  * 
-## factor(controlCond)Psychoeducation        -0.3538   0.2790    
-## factor(controlCond)Waitlist/no treatment  -0.0588  -0.0088  * 
+## intrcpt                                   -0.3337  -0.0893  ** 
+## factor(controlCond)Psychoeducation        -0.2596   0.2381     
+## factor(controlCond)Waitlist/no treatment  -0.0450   0.0244     
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <pre class="r"><code>anova.rma(model.m.mod)</code></pre>
 <pre><code>## 
 ## Test of Moderators (coefficients 2:3):
-## F(df1 = 2, df2 = 10) = 7.0448, p-val = 0.0123</code></pre>
+## F(df1 = 2, df2 = 10) = 0.3340, p-val = 0.7237</code></pre>
 </div>
 </div>
 </div>
