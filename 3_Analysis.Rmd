@@ -49,7 +49,8 @@ df.fu <- df %>%
         pivot_wider(names_from = "var",
                     values_from = "value") %>%
         drop_na(time) %>%
-        mutate(effectLabel = paste0(effectLabel, " (", time, " weeks)"),
+        mutate(groupByMeasure = effectLabel,
+               effectLabel = paste0(effectLabel, " (", time, " weeks)"),
                effectLabelNew = paste0(effectLabelNew, " (", time, " weeks)"),
                effectLabelAlt = paste0(effectLabelAlt, " (", time, " weeks)"),
                followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
@@ -81,16 +82,6 @@ model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
 print(model.post.IO_t2)
 ```
 
-Default forest plot
-
-```{r}
-forest(model.post.IO_t2,
-       slab = df$article,
-       order = order(df$article, desc(df$effectLabel)))
-```
-
-My forest plot
-
 ```{r}
 out <- df %>%
   mutate(est = g.post_t2,
@@ -104,9 +95,9 @@ out <- rbind(out,
              tibble(
                article = "Overall Estimate",
                effectLabelAlt = "Overall Estimate",
-               est = NA, #model.post.IO_t2$b[1,1],
-               lower = NA, #model.post.IO_t2$ci.lb,
-               upper = NA, #model.post.IO_t2$ci.ub
+               est = NA, 
+               lower = NA, 
+               upper = NA, 
                n = NA
              ))
 
@@ -126,7 +117,7 @@ ggplot(out,
              shape = "square") +
   geom_errorbarh() +
   scale_y_discrete(name = NULL, 
-                   limits = rev) + #Set breaks = NULL to remove effect labels
+                   limits = rev) +
   scale_x_continuous(name = "Hedge's g") +
   scale_size_continuous(range = c(1, 4)) +
   facet_grid(article ~ .,
@@ -338,22 +329,12 @@ _End of post-test effects analysis._
 ```{r}
 model.fu.IO_t2 <- rma.mv(yi = g.fu_t2 ~ 1,
                          V = varG.fu_t2,
-                         random = ~ 1 | studyID,
+                         random = ~ 1 | studyID, #Same as 1 | studyID/groupByMeasure
                          data = df.fu) %>%
   robust(cluster = df.fu$studyID)
 
 print(model.fu.IO_t2)
 ```
-
-Default forest plot
-
-```{r}
-forest(model.fu.IO_t2,
-       slab = df.fu$article,
-       order = order(df.fu$article, desc(df.fu$effectLabel)))
-```
-
-My forest plot
 
 ```{r}
 out <- df.fu %>%
@@ -368,9 +349,9 @@ out <- rbind(out,
              tibble(
                article = "Overall Estimate",
                effectLabelAlt = "Overall Estimate",
-               est = NA, #model.fu.IO_t2$b[1,1],
-               lower = NA, #model.fu.IO_t2$ci.lb,
-               upper = NA, #model.fu.IO_t2$ci.ub
+               est = NA, 
+               lower = NA, 
+               upper = NA, 
                n = NA
              ))
 
@@ -390,7 +371,7 @@ ggplot(out,
              shape = "square") +
   geom_errorbarh() +
   scale_y_discrete(name = NULL, 
-                   limits = rev) + #Set breaks = NULL to remove effect labels
+                   limits = rev) + 
   scale_x_continuous(name = "Hedge's g") +
   scale_size_continuous(range = c(1, 4)) +
   facet_grid(article ~ .,
