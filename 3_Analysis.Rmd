@@ -58,6 +58,37 @@ df.fu <- df %>%
                                           time > 12 ~ "Greater than 12 weeks"))
 ```
 
+# Characteristics of included studies
+
+```{r}
+vars <- names(df)[3:35]
+
+for(var in vars) {
+  
+  print("--------------------------------------------------")
+  print(var)
+  print("")
+  
+  if(class(df[[var]]) == "numeric") {
+    
+    print(paste0("Mean: ", round(mean(df[[var]], na.rm = T), 2)))
+    print(paste0("Median: ", round(median(df[[var]], na.rm = T), 2)))
+    
+  } else {
+    
+    df %>%
+      count(!!rlang::sym(var)) %>%
+      print()
+    
+  }
+  
+  print("")
+  print("")
+  print("")
+  
+}
+```
+
 # Meta-analysis
 
 Mixed-effects model with robust variance estimation using `metafor`
@@ -380,6 +411,28 @@ for(moderator in moderators) {
 }
 
 out <- out[-1,]
+
+out <- out %>%
+  mutate(moderator = recode(moderator,
+                            "year" = "Year",
+                            "country" = "Country", 
+                            "interventionType" = "Intervention Type",
+                            "riskScreen" = "Risk Screening",
+                            "meanAge" = "Mean Age",
+                            "pctFemale" = "Percent Female",
+                            "pctNonwhite" = "Percent Non-white",
+                            "provider" = "Provider",
+                            "length.minutes" = "Length (Minutes)",
+                            "length.sessions" = "Length (Sessions)",
+                            "length.days" = "Length (Days)",
+                            "trtCompletion" = "Treatment Completion Rate",
+                            "controlCond" = "Control Condition",
+                            "outcome" = "Outcome",
+                            "supervision" = "Facilitator Supervision",
+                            "studyCompletion.post" = "Post-test Data Availability",
+                            "randUnits" = "Randomized Units"))
+
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Moderator Table - Post-Treatment.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%
@@ -704,6 +757,29 @@ for(moderator in moderators) {
 }
 
 out <- out[-1,]
+
+out <- out %>%
+  mutate(moderator = recode(moderator,
+                            "year" = "Year",
+                            "country" = "Country", 
+                            "interventionType" = "Intervention Type",
+                            "riskScreen" = "Risk Screening",
+                            "meanAge" = "Mean Age",
+                            "pctFemale" = "Percent Female",
+                            "pctNonwhite" = "Percent Non-white",
+                            "provider" = "Provider",
+                            "length.minutes" = "Length (Minutes)",
+                            "length.sessions" = "Length (Sessions)",
+                            "length.days" = "Length (Days)",
+                            "trtCompletion" = "Treatment Completion Rate",
+                            "controlCond" = "Control Condition",
+                            "outcome" = "Outcome",
+                            "followUpLength" = "Follow-up Length",
+                            "supervision" = "Facilitator Supervision",
+                            "studyCompletion.post" = "Post-test Data Availability",
+                            "randUnits" = "Randomized Units"))
+
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Moderator Table - Follow-Up.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%
