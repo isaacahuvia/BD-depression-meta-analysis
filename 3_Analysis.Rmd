@@ -435,7 +435,7 @@ out <- out %>%
                             "studyCompletion.post" = "Post-test Data Availability",
                             "randUnits" = "Randomized Units"))
 
-write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Moderator Table - Post-Treatment.csv")
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Post-Treatment.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%
@@ -782,7 +782,7 @@ out <- out %>%
                             "studyCompletion.post" = "Post-test Data Availability",
                             "randUnits" = "Randomized Units"))
 
-write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Moderator Table - Follow-Up.csv")
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Follow-Up.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%

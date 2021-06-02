@@ -1,26 +1,27 @@
-######################################
-## Calculate Inter-rater Agreement  ##
-######################################
+---
+title: "Calculate Inter-rater Agreement"
+date: "6/2/2021"
+output: html_document
+---
 
-####  Startup  ####
+```{r, include = F}
+## Startup
 rm(list = ls())
 library(easypackages)
-libraries("tidyverse", "openxlsx", "irr")
+libraries("tidyverse", "openxlsx", "irr", "knitr", "kableExtra")
 
 
-
-####  Load Data  ####
-dfI <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\Independent Article Coding for IRR - Isaac.xlsx",
+## Load Data
+dfI <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Isaac - Before Re-code.xlsx",
                  startRow = 3,
                  na.strings = c("NA", "NR", "unknown"))
 
-dfL <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\Independent Article Coding for IRR - Laura.xlsx",
+dfL <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Laura - Before Re-code.xlsx",
                  startRow = 3,
                  na.strings = c("NA", "NR", "unknown"))
 
 
-
-####  Calculate IRR  ####
+## Set variable categories
 studyNames <- c("Study.year", "Publication.status", "Country", "Sample.source", "Opt-in", "Compensation", "Mean.age", "Minimum.age", "Maximum.age", "Percent.female", "Percent.white", "Percent.black", "Percent.hispanic", "Percent.asian", "Percent.Native.American", "Percent.other", "Percent.multi", "Percent.not.reported", "Percent.sexual.minority", "Intervention.type", "Risk.screening", "Blind.assignment")
 outcomeNames <- c("Respondent", "Depression-related.construct")
 groupNames <- c("Randomized.units", "n.(assigned)", "n.(started)", "n.(completed)", "Control.condition", "Intervention.delivery.format", "Intervention.target", "Provider.type", "Treatment.manual", "Manual.availability", "Pre-intervention.facilitator.training", "Facilitator.supervision/consultation", "Intervention.length.(minutes)", "Intervention.length.(sessions)", "Intervention.length.(days)", "Completion.rate")
@@ -28,6 +29,24 @@ groupNames <- c("Randomized.units", "n.(assigned)", "n.(started)", "n.(completed
 nominalNames <- c("Study.year", "Publication.status", "Country", "Sample.source", "Opt-in", "Compensation", "Intervention.type" ,"Risk.screening", "Blind.assignment", "Respondent", "Depression-related.construct", "Control.condition", "Intervention.delivery.format", "Intervention.target", "Provider.type", "Treatment.manual", "Manual.availability", "Pre-intervention.facilitator.training", "Facilitator.supervision/consultation")
 continuousNames <- setdiff(names(dfI), nominalNames)
 
+
+## Set functions
+diagnose <- function(x) {
+  
+  IRR = round(out$IRR[out$name == x], 2)
+  pct = round(100 * out$pctAgree[out$name == x])
+  disagree = length(na.omit(unique(dfI$X1[dfI[[x]] != dfL[[x]]])))
+  
+  out = paste0("(IRR = ", IRR, ", % Agree = ", pct, "%, ", disagree, " off)")
+  
+  return(out)
+  
+}
+```
+
+## Calculate IRR - Pre-Recode
+
+```{r, echo = F, message = F}
 out <- tibble(
   name = c(studyNames, outcomeNames, groupNames),
   IRR = NA_real_,
@@ -79,3 +98,27 @@ out %>%
   theme(strip.placement = "outside",
         strip.text.y.left = element_text(angle = 0)) +
   geom_vline(xintercept = .8)
+
+out %>%
+  group_by(category) %>%
+  summarize(min = min(IRR, na.rm = T),
+            minOver = min(IRR[IRR >= .8], na.rm = T),
+            max = max(IRR, na.rm = T)) %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+Fields with <.8 ICC: `r na.omit(out$name[out$IRR < .8])`
+
+We'll re-code:
+
+- `Provider.type` `r diagnose("Provider.type")`
+- `Manual.availability` `r diagnose("Manual.availability")`
+- `Intervention.target` `r diagnose("Intervention.target")`
+
+We don't have to re-code:
+
+- `Pre-intervention.facilitator.training` `r diagnose("Pre-intervention.facilitator.training")`
+- `Intervention.delivery.format` `r diagnose("Intervention.delivery.format")`
+- `Percent.multi` `r diagnose("Percent.multi")`
+- `Blind.assignment` `r diagnose("Blind.assignment")`
