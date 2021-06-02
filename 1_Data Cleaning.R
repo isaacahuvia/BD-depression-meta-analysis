@@ -11,7 +11,7 @@ libraries("tidyverse", "openxlsx")
 
 
 ####  Load Data  ####
-raw <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\210524 Article Coding (Pre-Consensus).xlsx",
+raw <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\210602 Article Coding (Pre-Consensus).xlsx",
                  sheet = "Coding - Consensus", 
                  startRow = 3,
                  na.strings = c("NA", "NR"))
@@ -93,7 +93,6 @@ df <- raw %>%
             outcome = case_when(`Depression-related.construct` == 1 ~ "Depression Symptomatology",
                                 `Depression-related.construct` == 2 ~ "Trait Negative Affect",
                                 T ~ NA_character_),
-            meanType = `Mean.Type`,
             pre.n = `n.(pre)`,
             pre.mean = `mean.(pre)`,
             pre.sd = `sd.(pre)`,
@@ -129,7 +128,7 @@ df.study <- df %>%
     #Study ID (to use as an identifier during merge)
     studyID, 
     #Study variables
-    article:blindAssign, studyCompletion.post, studyCompletion.fu1, studyCompletion.fu2, randUnits, meanType) %>%
+    article:blindAssign, studyCompletion.post, studyCompletion.fu1, studyCompletion.fu2, randUnits) %>%
   filter(!duplicated(.))
 
 #df.trt: Group- and measure-level characteristics for treatment groups only

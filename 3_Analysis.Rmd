@@ -18,6 +18,7 @@ libraries("tidyverse", "metafor", "magrittr", "knitr", "kableExtra")
 df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
 
 
+
 ## Update Effect Labels
 df <- df %>%
   group_by(studyID) %>%
@@ -244,6 +245,8 @@ See for minimum n/group in moderator test: <https://www.researchgate.net/post/Do
 
 Consider decomposing effects of effect-level and study-level moderation (see page 13, <https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf>)
 
+Consider random slopes for moderators: `random = ~ mod | studyID, struct="GEN"` <https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230>
+
 Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`
 
 Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
@@ -285,7 +288,7 @@ moderators <- c(
   #Outcome
   "outcome",
   #Quality assessment
-  "blindAssign", "manual", "supervision", "studyCompletion.post", "meanType", "randUnits")
+  "blindAssign", "manual", "supervision", "studyCompletion.post", "randUnits")
 
 df <- df %>%
   mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond),
@@ -632,7 +635,7 @@ moderators <- c(
   #Outcome
   "outcome", "followUpLength",
   #Quality assessment
-  "blindAssign", "manual", "supervision", "studyCompletion", "meanType", "randUnits")
+  "blindAssign", "manual", "supervision", "studyCompletion", "randUnits")
 
 df.fu <- df.fu %>%
   mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond))

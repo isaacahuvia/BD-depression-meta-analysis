@@ -17,7 +17,7 @@ df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatis
 
 ####  Calculate Effect Sizes  ####
 ## Define functions
-#Calculate Cohen's d using pre- and post-test data (for studies where this is available)
+#Calculate Cohen's d using pre- and post-test data
 #Done by taking the mean pre-post change in the treatment group minus the mean pre-post change in the control group, divided by the pooled pre-test standard deviation.
   #See Morris, S. B. (2008). Estimating effect sizes from pretest-posttest-control group designs. Organizational research methods, 11(2), 364-386.
 calculateD.t1t2 <- function(y1.t, y2.t, n1.t, s1.t,
@@ -77,22 +77,16 @@ calculateVarD <- function(n.t, n.c, d) {
 df.ES <- df %>%
   mutate(
     
-    effectLabel = paste0(if_else(meanType == "Adjusted", "*", ""), t.groupDetailed, " vs ", c.groupDetailed, ", ", outcome),
+    effectLabel = paste0(t.groupDetailed, " vs ", c.groupDetailed, ", ", outcome),
     
     ## Calculate post-test effect size variables
     #Calculate Cohen's d effect size (post-test)
-    d.post_t1t2 = case_when(
-      
-      meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.post.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
-                                                 y1.c = c.pre.mean, y2.c = c.post.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
-      meanType == "Adjusted" ~ calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
-                                             y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd)
-      
-    ),
+    d.post_t1t2 = calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.post.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
+                                  y1.c = c.pre.mean, y2.c = c.post.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
     
     #Calculate Cohen's d effect size (post-test), this one using only post-test data
     d.post_t2 = calculateD.t2(y2.t = t.post.mean, n2.t = t.post.n, s2.t = t.post.sd,
-                               y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd),
+                              y2.c = c.post.mean, n2.c = c.post.n, s2.c = c.post.sd),
     
     #Calculate variance of Cohen's d effect size (post-test)
     varD.post_t1t2 = calculateVarD(n.t = t.post.n, n.c = c.post.n, d = d.post_t1t2),
@@ -116,14 +110,8 @@ df.ES <- df %>%
     time.fu1 = t.fu1.time,
     
     #Calculate Cohen's d effect size (follow-up 1)
-    d.fu1_t1t2 = case_when(
-      
-      meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu1.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
-                                                 y1.c = c.pre.mean, y2.c = c.fu1.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
-      meanType == "Adjusted" ~ calculateD.t2(y2.t = t.fu1.mean, n2.t = t.fu1.n, s2.t = t.fu1.sd,
-                                             y2.c = c.fu1.mean, n2.c = c.fu1.n, s2.c = c.fu1.sd)
-      
-    ),
+    d.fu1_t1t2 = calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu1.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
+                                 y1.c = c.pre.mean, y2.c = c.fu1.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
     
     #Calculate Cohen's d effect size (follow-up 1), this one using only follow-up 1 data
     d.fu1_t2 = calculateD.t2(y2.t = t.fu1.mean, n2.t = t.fu1.n, s2.t = t.fu1.sd,
@@ -151,14 +139,8 @@ df.ES <- df %>%
     time.fu2 = t.fu2.time,
     
     #Calculate Cohen's d effect size (follow-up 2)
-    d.fu2_t1t2 = case_when(
-      
-      meanType == "Unadjusted" ~ calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu2.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
-                                                 y1.c = c.pre.mean, y2.c = c.fu2.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
-      meanType == "Adjusted" ~ calculateD.t2(y2.t = t.fu2.mean, n2.t = t.fu2.n, s2.t = t.fu2.sd,
-                                             y2.c = c.fu2.mean, n2.c = c.fu2.n, s2.c = c.fu2.sd)
-      
-    ),
+    d.fu2_t1t2 = calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.fu2.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
+                                 y1.c = c.pre.mean, y2.c = c.fu2.mean, n1.c = c.pre.n, s1.c = c.pre.sd),
     
     #Calculate Cohen's d effect size (follow-up 2), this one using only follow-up 2 data
     d.fu2_t2 = calculateD.t2(y2.t = t.fu2.mean, n2.t = t.fu2.n, s2.t = t.fu2.sd,
