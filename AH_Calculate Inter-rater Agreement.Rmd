@@ -12,13 +12,21 @@ libraries("tidyverse", "openxlsx", "irr", "knitr", "kableExtra")
 
 
 ## Load Data
-dfI <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Isaac - Before Re-code.xlsx",
-                 startRow = 3,
-                 na.strings = c("NA", "NR", "unknown"))
+dfI.preRecode <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Isaac - Before Re-code.xlsx",
+                           startRow = 3,
+                           na.strings = c("NA", "NR", "unknown"))
 
-dfL <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Laura - Before Re-code.xlsx",
-                 startRow = 3,
-                 na.strings = c("NA", "NR", "unknown"))
+dfL.preRecode <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Laura - Before Re-code.xlsx",
+                           startRow = 3,
+                           na.strings = c("NA", "NR", "unknown"))
+
+dfI.recode <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Isaac - Re-coded.xlsx",
+                        startRow = 3,
+                        na.strings = c("NA", "NR", "unknown"))
+
+dfL.recode <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Independent Article Coding for IRR - Laura - Re-coded.xlsx",
+                        startRow = 3,
+                        na.strings = c("NA", "NR", "unknown"))
 
 
 ## Set variable categories
@@ -27,7 +35,7 @@ outcomeNames <- c("Respondent", "Depression-related.construct")
 groupNames <- c("Randomized.units", "n.(assigned)", "n.(started)", "n.(completed)", "Control.condition", "Intervention.delivery.format", "Intervention.target", "Provider.type", "Treatment.manual", "Manual.availability", "Pre-intervention.facilitator.training", "Facilitator.supervision/consultation", "Intervention.length.(minutes)", "Intervention.length.(sessions)", "Intervention.length.(days)", "Completion.rate")
 
 nominalNames <- c("Study.year", "Publication.status", "Country", "Sample.source", "Opt-in", "Compensation", "Intervention.type" ,"Risk.screening", "Blind.assignment", "Respondent", "Depression-related.construct", "Control.condition", "Intervention.delivery.format", "Intervention.target", "Provider.type", "Treatment.manual", "Manual.availability", "Pre-intervention.facilitator.training", "Facilitator.supervision/consultation")
-continuousNames <- setdiff(names(dfI), nominalNames)
+continuousNames <- setdiff(names(dfI.preRecode), nominalNames)
 
 
 ## Set functions
@@ -60,7 +68,7 @@ out <- tibble(
   
 for(i in 1:nrow(out)) {
   
-  mat = cbind(dfI[,out$name[i]], dfL[,out$name[i]])
+  mat = cbind(dfI.preRecode[,out$name[i]], dfL.preRecode[,out$name[i]])
   
   if(all(is.na(mat))) {
     
@@ -122,3 +130,67 @@ We don't have to re-code:
 - `Intervention.delivery.format` `r diagnose("Intervention.delivery.format")`
 - `Percent.multi` `r diagnose("Percent.multi")`
 - `Blind.assignment` `r diagnose("Blind.assignment")`
+
+## Calculate IRR - After Recode
+
+```{r, echo = F, message = F}
+out <- tibble(
+  name = c(studyNames, outcomeNames, groupNames),
+  IRR = NA_real_,
+  pctAgree = NA_real_
+) %>%
+  mutate(category = case_when(name %in% studyNames ~ "Study",
+                              name %in% outcomeNames ~ "Outcome",
+                              name %in% groupNames ~ "Group"),
+         class = case_when(name %in% nominalNames ~ "Nominal",
+                           name %in% continuousNames ~ "Continuous"))
+  
+for(i in 1:nrow(out)) {
+  
+  mat = cbind(dfI.recode[,out$name[i]], dfL.recode[,out$name[i]])
+  
+  if(all(is.na(mat))) {
+    
+    out$IRR[i] = NA
+    out$pctAgree[i] = NA
+    
+  } else if(out$class[i] == "Nominal") {
+    
+    k = kappa2(mat)
+    out$IRR[i] = k$value
+    out$pctAgree[i] = mean(c(mat[,1] == mat[,2] | (is.na(mat[,1]) & is.na(mat[,2]))), na.rm = T)
+    
+  } else if(out$class[i] == "Continuous") {
+    
+    storage.mode(mat) = "numeric"
+    icc = icc(mat)
+    out$IRR[i] = icc$value
+    out$pctAgree[i] = mean(c(mat[,1] == mat[,2] | (is.na(mat[,1]) & is.na(mat[,2]))), na.rm = T)
+    
+  }
+  
+}
+
+out %>%
+  mutate(pctAgree = if_else(pctAgree > IRR, pctAgree, NA_real_)) %>%
+  pivot_longer(cols = IRR:pctAgree,
+               names_to = "metric") %>%
+  ggplot(aes(x = value, y = name)) +
+  geom_point(aes(color = metric)) +
+  facet_grid(category ~ .,
+             scales = "free",
+             space = "free",
+             switch = "y") +
+  scale_y_discrete(name = NULL) +
+  theme(strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0)) +
+  geom_vline(xintercept = .8)
+
+out %>%
+  group_by(category) %>%
+  summarize(min = min(IRR, na.rm = T),
+            minOver = min(IRR[IRR >= .8], na.rm = T),
+            max = max(IRR, na.rm = T)) %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+```
