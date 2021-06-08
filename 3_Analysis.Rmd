@@ -110,6 +110,8 @@ model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
 print(model.post.IO_t2)
 ```
 
+Test of heterogeneity Q(df = `r model.post.IO_t2$dfs` = `r round(model.post.IO_t2$QE, 3)`, p = `r round(model.post.IO_t2$QEp, 3)`)
+
 #### Using pre- and post-test data
 
 ```{r}

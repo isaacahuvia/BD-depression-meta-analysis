@@ -933,6 +933,7 @@ summary {
 ## 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<p>Test of heterogeneity Q(df = 12 = 45.993, p = 0.001)</p>
 </div>
 <div id="using-pre--and-post-test-data" class="section level4">
 <h4>Using pre- and post-test data</h4>
@@ -980,9 +981,9 @@ summary {
 <div id="moderation-tests" class="section level3">
 <h3>Moderation tests</h3>
 <p>Moderation tests for each of the following variables (pre-registered), including subgroups with n &gt;= 3 studies (not effect sizes).</p>
-<p>See for minimum n/group in moderator test: <a href="https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis" class="uri">https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis</a></p>
-<p>Consider decomposing effects of effect-level and study-level moderation (see page 13, <a href="https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf</a>)</p>
-<p>Consider random slopes for moderators: <code>random = ~ mod | studyID, struct=&quot;GEN&quot;</code> <a href="https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230" class="uri">https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230</a></p>
+<p>See for minimum n/group in moderator test (they suggest 4, we use 3): Fu, R., Gartlehner, G., Grant, M., Shamliyan, T., Sedrakyan, A., Wilt, T. J., … &amp; Trikalinos, T. A. (2011). Conducting quantitative synthesis when comparing medical interventions: AHRQ and the Effective Health Care Program. Journal of clinical epidemiology, 64(11), 1187-1197. <a href="https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis" class="uri">https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis</a></p>
+<p>To decompose effects of effect-level and study-level moderation, see page 13: <a href="https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf" class="uri">https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf</a></p>
+<p>To use random slopes for moderators: <code>random = ~ mod | studyID, struct=&quot;GEN&quot;</code> <a href="https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230" class="uri">https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230</a></p>
 <p>Pre-registered moderators: <code>year</code>, <code>pubStatus</code>, <code>country</code>, <code>sampleSource</code>, <code>meanAge</code>, <code>pctFemale</code>, <code>pctNonwhite</code>, <code>interventionType</code>, <code>riskScreen</code>, <code>outcome</code>, <code>controlCond</code>, <code>deliveryFormat</code>, <code>target</code>, <code>provider</code>, <code>supervision</code>, <code>length.minutes</code>, <code>length.sessions</code>, <code>length.days</code>, <code>trtCompletion</code>, <code>studyCompletion.post</code></p>
 <p>Added after pre-registration: <code>interventionParticipant</code>, <code>meanType</code>, <code>randUnits</code></p>
 <p>Moderators tested for quality assessment: <code>blindAssign</code>, <code>manual</code>, <code>preTraining</code>, <code>supervision</code>, <code>studyCompletion.post</code></p>
