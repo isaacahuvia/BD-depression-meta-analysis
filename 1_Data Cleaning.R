@@ -11,7 +11,7 @@ libraries("tidyverse", "openxlsx")
 
 
 ####  Load Data  ####
-raw <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\210602 Article Coding (Pre-Consensus).xlsx",
+raw <- read.xlsx("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Article Coding.xlsx",
                  sheet = "Coding - Consensus", 
                  startRow = 3,
                  na.strings = c("NA", "NR"))
@@ -119,6 +119,7 @@ df <- raw %>%
   ungroup()
 
 
+
 ## Reshape data
 #We want one row for each effect size, with all the study- and group-level characteristics on there too
 #First, split the data into three datasets with a common study ID
@@ -143,12 +144,16 @@ df.treatment <- df %>%
     #(Because we want to match treatment and control groups that measure the same outcome)
     outcome, measure:respondent,
     #Treatment group information
-    trtCompletion, interventionParticipant:length.days, groupDetailed, pre.n:fu2.sd
+    trtCompletion, interventionParticipant:length.days, pre.n:fu2.sd
     ) %>%
+  #Create index variable
+  group_by(studyID, outcome) %>%
+  mutate(i = row_number()) %>%
+  ungroup() %>%
   #Rename variables
-  rename_at(vars(groupDetailed:fu2.sd), ~ paste0("t.", .))
+  rename_at(vars(pre.n:i), ~ paste0("t.", .))
 
-#df.trt: Group- and measure-level characteristics for control groups only
+#df.control: Group- and measure-level characteristics for control groups only
 df.control <- df %>%
   #Filter to control group only
   filter(group == "Control") %>%
@@ -160,10 +165,15 @@ df.control <- df %>%
     #(Because we want to match treatment and control groups that measure the same outcome)
     outcome, measure:respondent,
     #Control group information
-    controlCond, groupDetailed, pre.n:fu2.sd
+    controlCond, pre.n:fu2.sd
   ) %>%
+  #Create index variable
+  group_by(studyID, outcome) %>%
+  mutate(i = row_number()) %>%
+  ungroup() %>%
   #Rename variables
-  rename_at(vars(groupDetailed:fu2.sd), ~ paste0("c.", .))
+  rename_at(vars(pre.n:i), ~ paste0("c.", .))
+
 
 ## Merge on study and measure
 #Create dataset of treatment:control group pairs
@@ -177,7 +187,20 @@ df.pairs <- left_join(df.study,
                       by = "studyID")
 
 
+## Generate effect size label
+df.pairs <- df.pairs %>%
+  group_by(studyID, outcome) %>%
+  mutate(t.k = max(t.i),
+         c.k = max(c.i),
+         t.group = if_else(t.k > 1, paste0("Treatment (", t.i, ")"), "Treatment"),
+         c.group = if_else(c.k > 1, paste0("Control (", c.i, ")"), "Control"),
+         effectLabel = paste0(t.group, " vs ", c.group, ", ", outcome)) %>%
+  ungroup()
+
+
 
 ####  Save Data  ####
+saveRDS(df,
+        "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data.rds")
 saveRDS(df.pairs,
         "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data (Paired).rds")

@@ -75,9 +75,8 @@ calculateVarD <- function(n.t, n.c, d) {
 }
 
 df.ES <- df %>%
+  
   mutate(
-    
-    effectLabel = paste0(t.groupDetailed, " vs ", c.groupDetailed, ", ", outcome),
     
     ## Calculate post-test effect size variables
     #Calculate Cohen's d effect size (post-test)
