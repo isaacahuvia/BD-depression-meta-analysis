@@ -39,7 +39,7 @@ continuousNames <- setdiff(names(dfI.preRecode), nominalNames)
 
 
 ## Set functions
-diagnose <- function(x) {
+diagnose <- function(dfI, dfL, x) {
   
   IRR = round(out$IRR[out$name == x], 2)
   pct = round(100 * out$pctAgree[out$name == x])
@@ -120,16 +120,16 @@ Fields with <.8 ICC: `r na.omit(out$name[out$IRR < .8])`
 
 We'll re-code:
 
-- `Provider.type` `r diagnose("Provider.type")`
-- `Manual.availability` `r diagnose("Manual.availability")`
-- `Intervention.target` `r diagnose("Intervention.target")`
+- `Provider.type` `r diagnose(dfI.preRecode, dfL.preRecode, "Provider.type")`
+- `Manual.availability` `r diagnose(dfI.preRecode, dfL.preRecode, "Manual.availability")`
+- `Intervention.target` `r diagnose(dfI.preRecode, dfL.preRecode, "Intervention.target")`
 
 We don't have to re-code:
 
-- `Pre-intervention.facilitator.training` `r diagnose("Pre-intervention.facilitator.training")`
-- `Intervention.delivery.format` `r diagnose("Intervention.delivery.format")`
-- `Percent.multi` `r diagnose("Percent.multi")`
-- `Blind.assignment` `r diagnose("Blind.assignment")`
+- `Pre-intervention.facilitator.training` `r diagnose(dfI.preRecode, dfL.preRecode, "Pre-intervention.facilitator.training")`
+- `Intervention.delivery.format` `r diagnose(dfI.preRecode, dfL.preRecode, "Intervention.delivery.format")`
+- `Percent.multi` `r diagnose(dfI.preRecode, dfL.preRecode, "Percent.multi")`
+- `Blind.assignment` `r diagnose(dfI.preRecode, dfL.preRecode, "Blind.assignment")`
 
 ## Calculate IRR - After Recode
 
@@ -194,3 +194,9 @@ out %>%
   kable(digits = 2) %>%
   kable_styling(full_width = F)
 ```
+
+Now re-coded:
+
+- `Provider.type` `r diagnose(dfI.recode, dfL.recode, "Provider.type")`
+- `Manual.availability` `r diagnose(dfI.recode, dfL.recode, "Manual.availability")`
+- `Intervention.target` `r diagnose(dfI.recode, dfL.recode, "Intervention.target")`
