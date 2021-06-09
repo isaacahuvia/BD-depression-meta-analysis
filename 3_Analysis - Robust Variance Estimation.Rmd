@@ -1,0 +1,249 @@
+---
+title: "3_Analysis"
+output: html_document
+---
+
+```{r, include = F}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r, message = F, warning = F}
+## Startup
+rm(list = ls())
+library(easypackages)
+libraries("tidyverse", "robumeta", "knitr", "kableExtra", "fastDummies")
+
+
+## Load Data
+characteristics <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data.rds")
+
+df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
+
+
+## Prepare Follow-up Data
+#Reshape to long dataset, code for follow-up time-point, and keep only follow-up outcomes
+df.fu <- df %>%
+  select_at(vars(-matches(".post"))) %>%
+  rename(nt.fu1 = t.fu1.n, nt.fu2 = t.fu2.n, nc.fu1 = c.fu1.n, nc.fu2 = c.fu2.n) %>%
+  pivot_longer(cols = c(studyCompletion.fu1, studyCompletion.fu2, nt.fu1, nt.fu2, nc.fu1, nc.fu2, time.fu1:varG.fu2_t2),
+                     names_to = c("var", "followUp"),
+                     names_sep = "\\.") %>%
+        mutate(var = if_else(var %in% c("d", "varD", "g", "varG"),
+                             paste0(var, ".fu", gsub(".*(?=_)", "", followUp, perl = T)),
+                             var),
+               followUp = gsub("_.*", "", followUp)) %>%
+        pivot_wider(names_from = "var",
+                    values_from = "value") %>%
+        drop_na(time) %>%
+        mutate(groupByMeasure = effectLabel,
+               effectLabel = paste0(effectLabel, " (", time, " weeks)"),
+               followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
+                                          time <= 12 ~ "Between 3 and 12 weeks",
+                                          time > 12 ~ "Greater than 12 weeks"))
+```
+
+# Characteristics of included studies
+
+```{r}
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(year:blindAssign, studyCompletion.post:studyCompletion.fu2) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  mutate(name = if_else(name %in% c("studyCompletion.fu1", "studyCompletion.fu2"), "studyCompletion.fu", name)) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Study characteristics") %>%
+  kable_styling()
+```
+
+```{r}
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(measure, respondent, outcome) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Measure characteristics") %>%
+  kable_styling()
+```
+
+```{r}
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(randUnits.group:length.days, pre.n) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Measure characteristics") %>%
+  kable_styling()
+```
+
+# Meta-analysis
+
+Mixed-effects models using `metafor`
+
+## Post-test effects
+
+### Intercept-only model
+
+#### Using post-test data only
+
+```{r}
+model.post.IO_t2 <- robu(formula = g.post_t2 ~ 1,
+                         data = df,
+                         studynum = studyID,
+                         var.eff.size = varG.post_t2,
+                         rho = .8,
+                         small = T)
+
+print(model.post.IO_t2)
+```
+
+Test of heterogeneity is the I.sq above
+
+#### Using pre- and post-test data
+
+```{r}
+model.post.IO_t1t2 <- robu(formula = g.post_t1t2 ~ 1,
+                         data = df,
+                         studynum = studyID,
+                         var.eff.size = varG.post_t1t2,
+                         rho = .8,
+                         small = T)
+
+print(model.post.IO_t1t2)
+```
+
+### Forest plot: 
+
+```{r}
+out <- df %>%
+  mutate(est = g.post_t2,
+         lower = g.post_t2 - (1.96 * sqrt(varG.post_t2)),
+         upper = g.post_t2 + (1.96 * sqrt(varG.post_t2)),
+         n = t.post.n + c.post.n,
+         article = factor(article)) %>%
+  select(article, effectLabel, est, lower, upper, n)
+
+out <- rbind(out,
+             tibble(
+               article = "Overall Estimate",
+               effectLabel = "Overall Estimate",
+               est = NA, 
+               lower = NA, 
+               upper = NA, 
+               n = NA
+             ))
+
+diamond <- data.frame(x = c(model.post.IO_t2$reg_table["CI.U"][[1]], 
+                            model.post.IO_t2$reg_table["b.r"][[1]], 
+                            model.post.IO_t2$reg_table["CI.L"][[1]], 
+                            model.post.IO_t2$reg_table["b.r"][[1]]), 
+                      y = c(1, 1.5, 1, .5),
+                      article = "Overall Estimate")
+
+ggplot(out, 
+       aes(y = effectLabel, 
+           x = est,
+           xmin = lower,
+           xmax = upper)) +
+  geom_point(aes(size = n), 
+             shape = "square") +
+  geom_errorbarh() +
+  scale_y_discrete(name = NULL, 
+                   limits = rev) +
+  scale_x_continuous(name = "Hedge's g") +
+  scale_size_continuous(range = c(1, 4)) +
+  facet_grid(article ~ .,
+             scales = "free_y",
+             space = "free_y",
+             switch = "y") +
+  theme(strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0),
+        legend.position = "none",
+        panel.background = element_rect(fill = NA),
+        axis.line.x = element_line(size = .5, color = "black"),
+        axis.ticks.y.left = element_blank()) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_polygon(data = diamond, 
+               aes(x = x, y = y),
+               inherit.aes = F,
+               fill = "black")
+```
+
+### Risk of bias assessment
+
+We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
+
+```{r}
+df <- df %>%
+  mutate(seG.post_t2 = sqrt(varG.post_t2),
+         gStd.post_t2 = g.post_t2 / seG.post_t2,
+         precision.post_t2 = 1 / seG.post_t2)
+
+robu(formula = g.post_t2 ~ 1 + precision.post_t2,
+     data = df,
+     studynum = studyID,
+     var.eff.size = varG.post_t2,
+     rho = .8,
+     small = T)
+```
+
+In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
+
+```{r}
+est = model.post.IO_t2$b.r[[1]]
+seMax = max(df$seG.post_t2)
+
+#line 1
+a1 = c(est, 0)
+b1 = c(est + 1.96 * seMax, seMax)
+m1 = (b1[2] - a1[2]) / (b1[1] - a1[1])
+b1 = -est * m1
+
+#line 2
+a2 = c(est, 0)
+b2 = c(est - 1.96 * seMax, seMax)
+m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
+b2 = -est * m2
+
+df %>%
+  ggplot(aes(g.post_t2, seG.post_t2)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
+  geom_vline(xintercept = est) +
+  geom_abline(intercept = b1, slope = m1, linetype = 2) +
+  geom_abline(intercept = b2, slope = m2, linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+df$n = df$c.pre.n + df$t.pre.n
+
+df %>%
+  ggplot(aes(g.post_t2, n)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_continuous(name = "n") +
+  geom_vline(xintercept = est) +
+  theme_classic()
+```

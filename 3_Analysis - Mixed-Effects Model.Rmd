@@ -4,35 +4,20 @@ output: html_document
 ---
 
 ```{r, include = F}
-knitr::opts_chunk$set(echo = F, warning = F)
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
 ```
 
 ```{r, message = F, warning = F}
 ## Startup
 rm(list = ls())
 library(easypackages)
-libraries("tidyverse", "metafor", "magrittr", "knitr", "kableExtra")
+libraries("tidyverse", "metafor", "knitr", "kableExtra", "fastDummies")
 
 
 ## Load Data
+characteristics <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data.rds")
+
 df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
-
-
-
-## Update Effect Labels
-df <- df %>%
-  group_by(studyID) %>%
-  mutate(t.group.i = match(t.groupDetailed, unique(t.groupDetailed)),
-         c.group.i = match(c.groupDetailed, unique(c.groupDetailed)),
-         t.group.n = length(unique(t.group.i)),
-         c.group.n = length(unique(c.group.i)),
-         t.groupNew = paste0("Trt (", t.group.i, ")"),
-         c.groupNew = paste0("Ctrl (", c.group.i, ")"),
-         t.groupAlt = if_else(t.group.n > 1, paste0("Trt (", t.group.i, ")"), "Trt"),
-         c.groupAlt = if_else(c.group.n > 1, paste0("Ctrl (", c.group.i, ")"), "Ctrl")) %>%
-  ungroup() %>%
-  mutate(effectLabelNew = paste0(t.groupNew, " vs. ", c.groupNew, ", ", outcome),
-         effectLabelAlt = paste0(t.groupAlt, " vs. ", c.groupAlt, ", ", outcome))
 
 
 ## Prepare Follow-up Data
@@ -52,8 +37,6 @@ df.fu <- df %>%
         drop_na(time) %>%
         mutate(groupByMeasure = effectLabel,
                effectLabel = paste0(effectLabel, " (", time, " weeks)"),
-               effectLabelNew = paste0(effectLabelNew, " (", time, " weeks)"),
-               effectLabelAlt = paste0(effectLabelAlt, " (", time, " weeks)"),
                followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
                                           time <= 12 ~ "Between 3 and 12 weeks",
                                           time > 12 ~ "Greater than 12 weeks"))
@@ -62,37 +45,60 @@ df.fu <- df %>%
 # Characteristics of included studies
 
 ```{r}
-vars <- names(df)[3:35]
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(year:blindAssign, studyCompletion.post:studyCompletion.fu2) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  mutate(name = if_else(name %in% c("studyCompletion.fu1", "studyCompletion.fu2"), "studyCompletion.fu", name)) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Study characteristics") %>%
+  kable_styling()
+```
 
-for(var in vars) {
-  
-  print("--------------------------------------------------")
-  print(var)
-  print("")
-  
-  if(class(df[[var]]) == "numeric") {
-    
-    print(paste0("Mean: ", round(mean(df[[var]], na.rm = T), 2)))
-    print(paste0("Median: ", round(median(df[[var]], na.rm = T), 2)))
-    
-  } else {
-    
-    df %>%
-      count(!!rlang::sym(var)) %>%
-      print()
-    
-  }
-  
-  print("")
-  print("")
-  print("")
-  
-}
+```{r}
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(measure, respondent, outcome) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Measure characteristics") %>%
+  kable_styling()
+```
+
+```{r}
+characteristics %>%
+  filter(!duplicated(article)) %>%
+  select(randUnits.group:length.days, pre.n) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            sum = sum(value),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Measure characteristics") %>%
+  kable_styling()
 ```
 
 # Meta-analysis
 
-Mixed-effects model with robust variance estimation using `metafor`
+Mixed-effects models using `metafor`
 
 ## Post-test effects
 
@@ -104,8 +110,8 @@ Mixed-effects model with robust variance estimation using `metafor`
 model.post.IO_t2 <- rma.mv(yi = g.post_t2 ~ 1,
                            V = varG.post_t2,
                            random = ~ 1 | studyID,
-                           data = df) %>%
-  robust(cluster = df$studyID)
+                           data = df,
+                           test = "t")
 
 print(model.post.IO_t2)
 ```
@@ -118,8 +124,8 @@ Test of heterogeneity Q(df = `r model.post.IO_t2$dfs` = `r round(model.post.IO_t
 model.post.IO_t1t2 <- rma.mv(yi = g.post_t1t2 ~ 1,
                              V = varG.post_t1t2,
                              random = ~ 1 | studyID,
-                             data = df) %>%
-  robust(cluster = df$studyID)
+                             data = df,
+                             test = "t")
 
 print(model.post.IO_t1t2)
 ```
@@ -133,12 +139,12 @@ out <- df %>%
          upper = g.post_t2 + (1.96 * sqrt(varG.post_t2)),
          n = t.post.n + c.post.n,
          article = factor(article)) %>%
-  select(article, effectLabelAlt, est, lower, upper, n)
+  select(article, effectLabel, est, lower, upper, n)
 
 out <- rbind(out,
              tibble(
                article = "Overall Estimate",
-               effectLabelAlt = "Overall Estimate",
+               effectLabel = "Overall Estimate",
                est = NA, 
                lower = NA, 
                upper = NA, 
@@ -153,7 +159,7 @@ diamond <- data.frame(x = c(model.post.IO_t2$ci.ub,
                       article = "Overall Estimate")
 
 ggplot(out, 
-       aes(y = effectLabelAlt, 
+       aes(y = effectLabel, 
            x = est,
            xmin = lower,
            xmax = upper)) +
@@ -194,8 +200,8 @@ df <- df %>%
 rma.mv(yi = gStd.post_t2 ~ 1 + precision.post_t2,
        V = varG.post_t2,
        random = ~ 1 | studyID,
-       data = df) %>%
-  robust(cluster = df$studyID)
+       data = df,
+       test = "t")
 ```
 
 In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
@@ -317,8 +323,8 @@ for(moderator in moderators) {
     model <- rma.mv(as.formula(paste0("yi = g.post_t2 ~ 1 + ", moderator)),
                   V = varG.post_t2,
                   random = ~ 1 | studyID,
-                  data = df[!is.na(df[[moderator]]),]) %>%
-      robust(cluster = df$studyID[!is.na(df[[moderator]])])
+                  data = df[!is.na(df[[moderator]]),],
+                  test = "t")
     
     modTest <- anova.rma(model)
     
@@ -355,8 +361,8 @@ for(moderator in moderators) {
       model <- rma.mv(as.formula(paste0("yi = g.post_t2 ~ 1 + ", moderator)),
                     V = varG.post_t2,
                     random = ~ 1 | studyID,
-                    data = df[df[[moderator]] %in% levels,]) %>%
-        robust(cluster = df$studyID[df[[moderator]] %in% levels])
+                    data = df[df[[moderator]] %in% levels,],
+                    test = "t")
     
       modTest <- anova.rma(model)
     
@@ -385,8 +391,8 @@ for(moderator in moderators) {
         model <- rma.mv(yi = g.post_t2 ~ 1,
                         V = varG.post_t2,
                         random = ~ 1 | studyID,
-                        data = df[df[[moderator]] %in% level,]) %>%
-          robust(cluster = df$studyID[df[[moderator]] %in% level])
+                        data = df[df[[moderator]] %in% level,],
+                        test = "t")
         
         subgroupEst = model$b[[1]]
         subgroupP = model$pval
@@ -459,8 +465,8 @@ _End of post-test effects analysis._
 model.fu.IO_t2 <- rma.mv(yi = g.fu_t2 ~ 1,
                          V = varG.fu_t2,
                          random = ~ 1 | studyID, #Same as 1 | studyID/groupByMeasure
-                         data = df.fu) %>%
-  robust(cluster = df.fu$studyID)
+                         data = df.fu,
+                         test = "t")
 
 print(model.fu.IO_t2)
 ```
@@ -471,8 +477,8 @@ print(model.fu.IO_t2)
 model.fu.IO_t1t2 <- rma.mv(yi = g.fu_t1t2 ~ 1,
                            V = varG.fu_t1t2,
                            random = ~ 1 | studyID,
-                           data = df.fu) %>%
-  robust(cluster = df.fu$studyID)
+                           data = df.fu,
+                           test = "t")
 
 print(model.fu.IO_t1t2)
 ```
@@ -486,12 +492,12 @@ out <- df.fu %>%
          upper = g.fu_t2 + (1.96 * sqrt(varG.fu_t2)),
          n = nt + nc,
          article = factor(article)) %>%
-  select(article, effectLabelAlt, est, lower, upper, n)
+  select(article, effectLabel, est, lower, upper, n)
 
 out <- rbind(out,
              tibble(
                article = "Overall Estimate",
-               effectLabelAlt = "Overall Estimate",
+               effectLabel = "Overall Estimate",
                est = NA, 
                lower = NA, 
                upper = NA, 
@@ -506,7 +512,7 @@ diamond <- data.frame(x = c(model.fu.IO_t2$ci.ub,
                       article = "Overall Estimate")
 
 ggplot(out, 
-       aes(y = effectLabelAlt, 
+       aes(y = effectLabel, 
            x = est,
            xmin = lower,
            xmax = upper)) +
@@ -547,8 +553,8 @@ df.fu <- df.fu %>%
 rma.mv(yi = gStd.fu_t2 ~ 1 + precision.fu_t2,
        V = varG.fu_t2,
        random = ~ 1 | studyID,
-       data = df.fu) %>%
-  robust(cluster = df.fu$studyID)
+       data = df.fu,
+       test = "t")
 ```
 
 In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
@@ -663,8 +669,8 @@ for(moderator in moderators) {
     model <- rma.mv(as.formula(paste0("yi = g.fu_t2 ~ 1 + ", moderator)),
                   V = varG.fu_t2,
                   random = ~ 1 | studyID,
-                  data = df.fu[!is.na(df.fu[[moderator]]),]) %>%
-      robust(cluster = df.fu$studyID[!is.na(df.fu[[moderator]])])
+                  data = df.fu[!is.na(df.fu[[moderator]]),],
+                  test = "t")
     
     modTest <- anova.rma(model)
     
@@ -701,8 +707,8 @@ for(moderator in moderators) {
       model <- rma.mv(as.formula(paste0("yi = g.fu_t2 ~ 1 + ", moderator)),
                     V = varG.fu_t2,
                     random = ~ 1 | studyID,
-                    data = df.fu[df.fu[[moderator]] %in% levels,]) %>%
-        robust(cluster = df.fu$studyID[df.fu[[moderator]] %in% levels])
+                    data = df.fu[df.fu[[moderator]] %in% levels,],
+                    test = "t")
     
       modTest <- anova.rma(model)
     
@@ -731,8 +737,8 @@ for(moderator in moderators) {
         model <- rma.mv(yi = g.fu_t2 ~ 1,
                         V = varG.fu_t2,
                         random = ~ 1 | studyID,
-                        data = df.fu[df.fu[[moderator]] %in% level,]) %>%
-          robust(cluster = df.fu$studyID[df.fu[[moderator]] %in% level])
+                        data = df.fu[df.fu[[moderator]] %in% level,],
+                        test = "t")
         
         subgroupEst = model$b[[1]]
         subgroupP = model$pval
