@@ -115,6 +115,8 @@ model.post.IO_t2 <- robu(formula = g.post_t2 ~ 1,
                          small = T)
 
 print(model.post.IO_t2)
+
+sensitivity(model.post.IO_t2)
 ```
 
 Test of heterogeneity is the I.sq above
@@ -247,3 +249,525 @@ df %>%
   geom_vline(xintercept = est) +
   theme_classic()
 ```
+
+### Moderation tests
+
+Moderation tests for each of the following variables (pre-registered), including subgroups with n >= 3 studies (not effect sizes).
+
+See for minimum n/group in moderator test (they suggest 4, we use 3): Fu, R., Gartlehner, G., Grant, M., Shamliyan, T., Sedrakyan, A., Wilt, T. J., ... & Trikalinos, T. A. (2011). Conducting quantitative synthesis when comparing medical interventions: AHRQ and the Effective Health Care Program. Journal of clinical epidemiology, 64(11), 1187-1197. <https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis>
+
+Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`
+
+Added after pre-registration: `interventionParticipant`, `randUnits`
+
+Moderators tested for quality assessment: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
+
+Dropped due to zero variation:
+
+- `pctSexualMinority`: All `NA`
+- `respondent`: All "Youth-reported"
+- `manual`: All "Treatment manual used" or `NA`
+- `preTraining`: All "Present" or `NA`
+
+Dropped because only one category had >= 3 studies:
+
+- `pubStatus`: Only 1 not "Peer-reviewed"
+- `sampleSource`: Only 1 not "Community sample"
+- `controlCond`: Only 2 "Psychoeducation," 1 "Other"
+- `delieryFormat`: Only 1 not "Group" 
+- `provider`: Only 1 "Self-administered," 1 "Other"
+- `interventionParticipant`: Only 2 not "Youth"
+- `blindAssign`: Only 1 not "No blind assignment"
+
+Dropped because couldn't establish IRR: 
+
+- `target`
+
+```{r}
+moderators <- c(
+  #Study characteristics
+  "year", "country", 
+  #Sampling
+  "interventionType", "riskScreen", 
+  #Population
+  "meanAge", "pctFemale", "pctNonwhite", 
+  #Intervention
+  "length.minutes", "length.sessions", "length.days", "trtCompletion",
+  #Outcome
+  "outcome",
+  #Quality assessment
+  "supervision", "studyCompletion.post", "randUnits")
+
+out <- tibble(
+  moderator = NA_character_,
+  level = NA_character_,
+  nStudies = NA_real_,
+  nES = NA_real_,
+  subgroupEst = NA_real_,
+  subgroupP = NA_real_,
+  coef = NA_real_,
+  overallStat = NA_real_,
+  overallP = NA_real_
+)
+
+for(moderator in moderators) {
+  
+  class <- class(df[[moderator]])
+  
+  if(class == "numeric") {
+    
+    model <- robu(formula = as.formula(paste0("g.post_t2 ~ 1 + ", moderator)),
+                  data = df[!is.na(df[[moderator]]),],
+                  studynum = studyID,
+                  var.eff.size = varG.post_t2,
+                  rho = .8,
+                  small = T)
+    
+    coef = model$reg_table$b.r[2]
+    
+    test = "t"
+    dfs = round(model$reg_table$dfs[2], 3)
+    stat = model$reg_table$t[2]
+    p = model$reg_table$prob[2]
+    
+    nStudies = length(unique(df$studyID[!is.na(df[[moderator]])]))
+    nES = sum(!is.na(df[[moderator]]))
+    
+    out <- rbind(out, tibble(
+      moderator = moderator,
+      level = NA,
+      nStudies = nStudies,
+      nES = nES,
+      subgroupEst = NA,
+      subgroupP = NA,
+      coef = coef,
+      overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
+      overallP = p
+    ))
+  
+  } else if(class == "character") {
+    
+    values <- df[[moderator]][!duplicated(df$studyID)]
+    table <- table(values)
+    levels <- names(table)[table >= 3]
+  
+    if(length(levels) == 2) {
+      
+      model <- robu(formula = as.formula(paste0("g.post_t2 ~ 1 + ", moderator)),
+                  data = df[df[[moderator]] %in% levels,],
+                  studynum = studyID,
+                  var.eff.size = varG.post_t2,
+                  rho = .8,
+                  small = T)
+    
+      test = "t"
+      dfs = round(model$reg_table$dfs[2], 3)
+      stat = model$reg_table$t[2]
+      p = model$reg_table$prob[2]
+      
+      out <- rbind(out, tibble(
+        moderator = moderator,
+        level = NA,
+        nStudies = NA,
+        nES = NA,
+        subgroupEst = NA,
+        subgroupP = NA,
+        coef = NA,
+        overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
+        overallP = p
+      ))
+        
+      for(level in levels) {
+        
+        nStudies = length(unique(df$studyID[df[[moderator]] %in% level]))
+        nES = sum(df[[moderator]] %in% level)
+        
+        model <- robu(formula = g.post_t2 ~ 1,
+                  data = df[df[[moderator]] %in% level,],
+                  studynum = studyID,
+                  var.eff.size = varG.post_t2,
+                  rho = .8,
+                  small = T)
+        
+        subgroupEst = model$reg_table$b.r
+        subgroupP = model$reg_table$prob
+          
+        out <- rbind(out, tibble(
+          moderator = moderator,
+          level = level,
+          nStudies = nStudies,
+          nES = nES,
+          subgroupEst = subgroupEst,
+          subgroupP = subgroupP,
+          coef = NA,
+          overallStat = NA,
+          overallP = NA
+        ))
+        
+      }
+      
+    } else {
+      
+      stop(paste0("Character moderator ", moderator, " does not have two levels"))
+      
+    }
+    
+  } else {
+    
+    stop(paste0("Moderator ", moderator, " not numeric or character"))
+    
+  }
+  
+}
+
+out <- out[-1,]
+
+out <- out %>%
+  mutate(moderator = recode(moderator,
+                            "year" = "Year",
+                            "country" = "Country", 
+                            "interventionType" = "Intervention Type",
+                            "riskScreen" = "Risk Screening",
+                            "meanAge" = "Mean Age",
+                            "pctFemale" = "Percent Female",
+                            "pctNonwhite" = "Percent Non-white",
+                            "length.minutes" = "Length (Minutes)",
+                            "length.sessions" = "Length (Sessions)",
+                            "length.days" = "Length (Days)",
+                            "trtCompletion" = "Treatment Completion Rate",
+                            "outcome" = "Outcome",
+                            "supervision" = "Facilitator Supervision",
+                            "studyCompletion.post" = "Post-test Data Availability",
+                            "randUnits" = "Randomized Units"))
+
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Post-Treatment.csv")
+
+options(knitr.kable.NA = "")
+kable(out, digits = 3) %>%
+  kable_paper() %>%
+  add_header_above(c(" " = 4, "Subgroup Analysis" = 3, "Moderator Test" = 2)) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+_End of post-test effects analysis._
+
+## Follow-up effects
+
+### Intercept-only model
+
+#### Using follow-up data only
+
+```{r}
+model.fu.IO_t2 <- robu(formula = g.fu_t2 ~ 1,
+                         data = df.fu,
+                         studynum = studyID,
+                         var.eff.size = varG.fu_t2,
+                         rho = .8,
+                         small = T)
+
+print(model.fu.IO_t2)
+```
+
+#### Using pre-test and follow-up data
+
+```{r}
+model.fu.IO_t1t2 <- robu(formula = g.fu_t1t2 ~ 1,
+                         data = df.fu,
+                         studynum = studyID,
+                         var.eff.size = varG.fu_t1t2,
+                         rho = .8,
+                         small = T)
+
+print(model.fu.IO_t1t2)
+```
+
+### Forest plot
+
+```{r}
+out <- df.fu %>%
+  mutate(est = g.fu_t2,
+         lower = g.fu_t2 - (1.96 * sqrt(varG.fu_t2)),
+         upper = g.fu_t2 + (1.96 * sqrt(varG.fu_t2)),
+         n = nt + nc,
+         article = factor(article)) %>%
+  select(article, effectLabel, est, lower, upper, n)
+
+out <- rbind(out,
+             tibble(
+               article = "Overall Estimate",
+               effectLabel = "Overall Estimate",
+               est = NA, 
+               lower = NA, 
+               upper = NA, 
+               n = NA
+             ))
+
+diamond <- data.frame(x = c(model.fu.IO_t2$reg_table["CI.U"][[1]], 
+                            model.fu.IO_t2$reg_table["b.r"][[1]], 
+                            model.fu.IO_t2$reg_table["CI.L"][[1]], 
+                            model.fu.IO_t2$reg_table["b.r"][[1]]), 
+                      y = c(1, 1.5, 1, .5),
+                      article = "Overall Estimate")
+
+ggplot(out, 
+       aes(y = effectLabel, 
+           x = est,
+           xmin = lower,
+           xmax = upper)) +
+  geom_point(aes(size = n), 
+             shape = "square") +
+  geom_errorbarh() +
+  scale_y_discrete(name = NULL, 
+                   limits = rev) + 
+  scale_x_continuous(name = "Hedge's g") +
+  scale_size_continuous(range = c(1, 4)) +
+  facet_grid(article ~ .,
+             scales = "free_y",
+             space = "free_y",
+             switch = "y") +
+  theme(strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0),
+        legend.position = "none",
+        panel.background = element_rect(fill = NA),
+        axis.line.x = element_line(size = .5, color = "black"),
+        axis.ticks.y.left = element_blank()) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_polygon(data = diamond, 
+               aes(x = x, y = y),
+               inherit.aes = F,
+               fill = "black")
+```
+
+### Risk of bias assessment
+
+We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
+
+```{r}
+df.fu <- df.fu %>%
+  mutate(seG.fu_t2 = sqrt(varG.fu_t2),
+         gStd.fu_t2 = g.fu_t2 / seG.fu_t2,
+         precision.fu_t2 = 1 / seG.fu_t2)
+
+robu(formula = g.fu_t2 ~ 1 + precision.fu_t2,
+     data = df.fu,
+     studynum = studyID,
+     var.eff.size = varG.fu_t2,
+     rho = .8,
+     small = T)
+```
+
+In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
+
+```{r}
+est = model.fu.IO_t2$b[[1]]
+seMax = max(df.fu$seG.fu_t2)
+
+#line 1
+a1 = c(est, 0)
+b1 = c(est + 1.96 * seMax, seMax)
+m1 = (b1[2] - a1[2]) / (b1[1] - a1[1])
+b1 = -est * m1
+
+#line 2
+a2 = c(est, 0)
+b2 = c(est - 1.96 * seMax, seMax)
+m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
+b2 = -est * m2
+
+df.fu %>%
+  ggplot(aes(g.fu_t2, seG.fu_t2)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
+  geom_vline(xintercept = est) +
+  geom_abline(intercept = b1, slope = m1, linetype = 2) +
+  geom_abline(intercept = b2, slope = m2, linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+df.fu$n = df.fu$nc + df.fu$nt
+
+df.fu %>%
+  ggplot(aes(g.fu_t2, n)) +
+  geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_continuous(name = "n") +
+  geom_vline(xintercept = est) +
+  theme_classic()
+```
+
+### Moderation tests
+
+
+
+```{r}
+moderators <- c(
+  #Study characteristics
+  "year", "country", 
+  #Sampling
+  "interventionType", "riskScreen", 
+  #Population
+  "meanAge", "pctFemale", "pctNonwhite", 
+  #Intervention
+  "length.minutes", "length.sessions", "length.days", "trtCompletion",
+  #Outcome
+  "outcome", "followUpLength",
+  #Quality assessment
+  "supervision", "studyCompletion", "randUnits")
+
+out <- tibble(
+  moderator = NA_character_,
+  level = NA_character_,
+  nStudies = NA_real_,
+  nES = NA_real_,
+  subgroupEst = NA_real_,
+  subgroupP = NA_real_,
+  coef = NA_real_,
+  overallStat = NA_real_,
+  overallP = NA_real_
+)
+
+for(moderator in moderators) {
+  
+  class <- class(df.fu[[moderator]])
+  
+  if(class == "numeric") {
+    
+    model <- robu(formula = as.formula(paste0("g.fu_t2 ~ 1 + ", moderator)),
+                  data = df.fu[!is.na(df.fu[[moderator]]),],
+                  studynum = studyID,
+                  var.eff.size = varG.fu_t2,
+                  rho = .8,
+                  small = T)
+    
+    coef = model$reg_table$b.r[2]
+    
+    test = "t"
+    dfs = round(model$reg_table$dfs[2], 3)
+    stat = model$reg_table$t[2]
+    p = model$reg_table$prob[2]
+    
+    nStudies = length(unique(df.fu$studyID[!is.na(df.fu[[moderator]])]))
+    nES = sum(!is.na(df.fu[[moderator]]))
+    
+    out <- rbind(out, tibble(
+      moderator = moderator,
+      level = NA,
+      nStudies = nStudies,
+      nES = nES,
+      subgroupEst = NA,
+      subgroupP = NA,
+      coef = coef,
+      overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
+      overallP = p
+    ))
+  
+  } else if(class == "character") {
+    
+    values <- df.fu[[moderator]][!duplicated(df.fu$studyID)]
+    table <- table(values)
+    levels <- names(table)[table >= 3]
+  
+    if(length(levels) == 2) {
+      
+      model <- robu(formula = as.formula(paste0("g.fu_t2 ~ 1 + ", moderator)),
+                  data = df.fu[df.fu[[moderator]] %in% levels,],
+                  studynum = studyID,
+                  var.eff.size = varG.fu_t2,
+                  rho = .8,
+                  small = T)
+    
+      test = "t"
+      dfs = round(model$reg_table$dfs[2], 3)
+      stat = model$reg_table$t[2]
+      p = model$reg_table$prob[2]
+      
+      out <- rbind(out, tibble(
+        moderator = moderator,
+        level = NA,
+        nStudies = NA,
+        nES = NA,
+        subgroupEst = NA,
+        subgroupP = NA,
+        coef = NA,
+        overallStat = paste0(test, "(", dfs, ") = ", round(stat, 3)),
+        overallP = p
+      ))
+        
+      for(level in levels) {
+        
+        nStudies = length(unique(df.fu$studyID[df.fu[[moderator]] %in% level]))
+        nES = sum(df.fu[[moderator]] %in% level)
+        
+        model <- robu(formula = g.fu_t2 ~ 1,
+                  data = df.fu[df.fu[[moderator]] %in% level,],
+                  studynum = studyID,
+                  var.eff.size = varG.fu_t2,
+                  rho = .8,
+                  small = T)
+        
+        subgroupEst = model$reg_table$b.r
+        subgroupP = model$reg_table$prob
+          
+        out <- rbind(out, tibble(
+          moderator = moderator,
+          level = level,
+          nStudies = nStudies,
+          nES = nES,
+          subgroupEst = subgroupEst,
+          subgroupP = subgroupP,
+          coef = NA,
+          overallStat = NA,
+          overallP = NA
+        ))
+        
+      }
+      
+    } else {
+      
+      stop(paste0("Character moderator ", moderator, " does not have two levels"))
+      
+    }
+    
+  } else {
+    
+    stop(paste0("Moderator ", moderator, " not numeric or character"))
+    
+  }
+  
+}
+
+out <- out[-1,]
+
+out <- out %>%
+  mutate(moderator = recode(moderator,
+                            "year" = "Year",
+                            "country" = "Country", 
+                            "interventionType" = "Intervention Type",
+                            "riskScreen" = "Risk Screening",
+                            "meanAge" = "Mean Age",
+                            "pctFemale" = "Percent Female",
+                            "pctNonwhite" = "Percent Non-white",
+                            "length.minutes" = "Length (Minutes)",
+                            "length.sessions" = "Length (Sessions)",
+                            "length.days" = "Length (Days)",
+                            "trtCompletion" = "Treatment Completion Rate",
+                            "outcome" = "Outcome",
+                            "followUpLength" = "Follow-up Length",
+                            "supervision" = "Facilitator Supervision",
+                            "studyCompletion" = "Follow-up Data Availability",
+                            "randUnits" = "Randomized Units"))
+
+write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Follow-Up.csv")
+
+options(knitr.kable.NA = "")
+kable(out, digits = 3) %>%
+  kable_paper() %>%
+  add_header_above(c(" " = 4, "Subgroup Analysis" = 3, "Moderator Test" = 2)) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1, valign = "top")
+```
+
+_End of follow-up effects analysis._

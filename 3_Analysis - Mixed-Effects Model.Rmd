@@ -251,13 +251,11 @@ Moderation tests for each of the following variables (pre-registered), including
 
 See for minimum n/group in moderator test (they suggest 4, we use 3): Fu, R., Gartlehner, G., Grant, M., Shamliyan, T., Sedrakyan, A., Wilt, T. J., ... & Trikalinos, T. A. (2011). Conducting quantitative synthesis when comparing medical interventions: AHRQ and the Effective Health Care Program. Journal of clinical epidemiology, 64(11), 1187-1197. <https://www.researchgate.net/post/Does-anyone-have-any-citations-supporting-a-specific-number-of-studies-eg-3-or-more-per-subgroup-in-a-categorical-moderator-analysis>
 
-To decompose effects of effect-level and study-level moderation, see page 13: <https://cran.r-project.org/web/packages/robumeta/vignettes/robumetaVignette.pdf>
-
 To use random slopes for moderators: `random = ~ mod | studyID, struct="GEN"` <https://stats.stackexchange.com/questions/526230/in-a-multi-level-meta-analysis-are-moderator-variables-random-or-fixed-effects?noredirect=1#comment969486_526230>
 
 Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion.post`
 
-Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
+Added after pre-registration: `interventionParticipant`, `randUnits`
 
 Moderators tested for quality assessment: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
 
@@ -272,35 +270,30 @@ Dropped because only one category had >= 3 studies:
 
 - `pubStatus`: Only 1 not "Peer-reviewed"
 - `sampleSource`: Only 1 not "Community sample"
-- `delieryFormat`: Only 2 not "Group" 
-- `target`: Only 2 not "Body dissatisfaction"
+- `controlCond`: Only 2 "Psychoeducation," 1 "Other"
+- `delieryFormat`: Only 1 not "Group" 
+- `provider`: Only 1 "Self-administered," 1 "Other"
 - `interventionParticipant`: Only 2 not "Youth"
-- `meanType`: Only 1 not "Unadjusted"
 - `blindAssign`: Only 1 not "No blind assignment"
 
-Collapsed categories to allow for analysis: _(Neither of these ping as significant; maybe don't collapse categories)_
+Dropped because couldn't establish IRR: 
 
-- `controlCond`: "Psychoeducation" (2) and "Other" (1) combined into "Active control"
-- `provider`: "Self-administered" (1) and "Lay-administered" (2) combined into "Non-clinician-administered"
+- `target`
 
 ```{r}
 moderators <- c(
   #Study characteristics
-  "year", "pubStatus", "country", 
+  "year", "country", 
   #Sampling
-  "sampleSource", "interventionType", "riskScreen", 
+  "interventionType", "riskScreen", 
   #Population
   "meanAge", "pctFemale", "pctNonwhite", 
   #Intervention
-  "target", "provider", "interventionParticipant", "deliveryFormat", "length.minutes", "length.sessions", "length.days", "trtCompletion", "controlCond",
+  "length.minutes", "length.sessions", "length.days", "trtCompletion",
   #Outcome
   "outcome",
   #Quality assessment
-  "blindAssign", "manual", "supervision", "studyCompletion.post", "randUnits")
-
-df <- df %>%
-  mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond),
-         provider = if_else(provider %in% c("Lay-administered", "Self-administered"), "Non-clinician-administered", provider))
+  "supervision", "studyCompletion.post", "randUnits")
 
 out <- tibble(
   moderator = NA_character_,
@@ -432,18 +425,14 @@ out <- out %>%
                             "meanAge" = "Mean Age",
                             "pctFemale" = "Percent Female",
                             "pctNonwhite" = "Percent Non-white",
-                            "provider" = "Provider",
                             "length.minutes" = "Length (Minutes)",
                             "length.sessions" = "Length (Sessions)",
                             "length.days" = "Length (Days)",
                             "trtCompletion" = "Treatment Completion Rate",
-                            "controlCond" = "Control Condition",
                             "outcome" = "Outcome",
                             "supervision" = "Facilitator Supervision",
                             "studyCompletion.post" = "Post-test Data Availability",
                             "randUnits" = "Randomized Units"))
-
-write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Post-Treatment.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%
@@ -600,53 +589,22 @@ df.fu %>%
 
 ### Moderation tests
 
-Moderation tests for each of the following variables (pre-registered) with n >= 3 studies (not effect sizes) per group.
 
-Pre-registered moderators: `year`, `pubStatus`, `country`, `sampleSource`, `meanAge`, `pctFemale`, `pctNonwhite`, `interventionType`, `riskScreen`, `outcome`, `controlCond`, `deliveryFormat`, `target`, `provider`, `supervision`, `length.minutes`, `length.sessions`, `length.days`, `trtCompletion`, `studyCompletion`, `followUpLength`
-
-Added after pre-registration: `interventionParticipant`, `meanType`, `randUnits`
-
-Moderators tested for quality assessment: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion`
-
-Dropped due to zero variation:
-
-- `pctSexualMinority`: All `NA`
-- `respondent`: All "Youth-reported"
-- `manual`: All "Treatment manual used" or `NA`
-- `preTraining`: All "Present" or `NA`
-
-Dropped because only one category had >= 3 studies:
-
-- `pubStatus`: Only 1 not "Peer-reviewed"
-- `sampleSource`: Only 1 not "Community sample"
-- `delieryFormat`: Only 1 not "Group" 
-- `target`: Only 2 not "Body dissatisfaction"
-- `provider`: Only 2 not "Clinician-administered"
-- `interventionParticipant`: Only 2 not "Youth"
-- `meanType`: Only 1 not "Unadjusted"
-- `blindAssign`: Only 1 not "No blind assignment"
-
-Collapsed categories to allow for analysis: _(Not significant; maybe don't collapse categories)_
-
-- `controlCond`: "Psychoeducation" (2) and "Other" (1) combined into "Active control"
 
 ```{r}
 moderators <- c(
   #Study characteristics
-  "year", "pubStatus", "country", 
+  "year", "country", 
   #Sampling
-  "sampleSource", "interventionType", "riskScreen", 
+  "interventionType", "riskScreen", 
   #Population
   "meanAge", "pctFemale", "pctNonwhite", 
   #Intervention
-  "target", "provider", "interventionParticipant", "deliveryFormat", "length.minutes", "length.sessions", "length.days", "trtCompletion", "controlCond",
+  "length.minutes", "length.sessions", "length.days", "trtCompletion",
   #Outcome
   "outcome", "followUpLength",
   #Quality assessment
-  "blindAssign", "manual", "supervision", "studyCompletion", "randUnits")
-
-df.fu <- df.fu %>%
-  mutate(controlCond = if_else(controlCond %in% c("Psychoeducation", "Other"), "Active control", controlCond))
+  "supervision", "studyCompletion", "randUnits")
 
 out <- tibble(
   moderator = NA_character_,
@@ -778,19 +736,15 @@ out <- out %>%
                             "meanAge" = "Mean Age",
                             "pctFemale" = "Percent Female",
                             "pctNonwhite" = "Percent Non-white",
-                            "provider" = "Provider",
                             "length.minutes" = "Length (Minutes)",
                             "length.sessions" = "Length (Sessions)",
                             "length.days" = "Length (Days)",
                             "trtCompletion" = "Treatment Completion Rate",
-                            "controlCond" = "Control Condition",
                             "outcome" = "Outcome",
                             "followUpLength" = "Follow-up Length",
                             "supervision" = "Facilitator Supervision",
-                            "studyCompletion.post" = "Post-test Data Availability",
+                            "studyCompletion" = "Follow-up Data Availability",
                             "randUnits" = "Randomized Units"))
-
-write.csv(out, "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Outputs\\Moderator Table - Follow-Up.csv")
 
 options(knitr.kable.NA = "")
 kable(out, digits = 3) %>%
