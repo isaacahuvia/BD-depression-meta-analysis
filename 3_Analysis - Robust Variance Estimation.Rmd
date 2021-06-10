@@ -143,6 +143,8 @@ characteristics %>%
 
 # Meta-analysis
 
+Correlated-effects model with Robust Variance Estimation using `robumeta`
+
 ## Post-test effects
 
 ### Intercept-only model
