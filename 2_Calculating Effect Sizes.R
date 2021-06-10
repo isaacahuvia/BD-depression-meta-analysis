@@ -78,6 +78,12 @@ df.ES <- df %>%
   
   mutate(
     
+    ## Calculate combined n's
+    n.pre = t.pre.n + c.pre.n,
+    n.post = t.post.n + c.post.n,
+    n.fu1 = t.fu1.n + c.fu1.n,
+    n.fu2 = t.fu2.n + c.fu2.n,
+    
     ## Calculate post-test effect size variables
     #Calculate Cohen's d effect size (post-test)
     d.post_t1t2 = calculateD.t1t2(y1.t = t.pre.mean, y2.t = t.post.mean, n1.t = t.pre.n, s1.t = t.pre.sd,
@@ -168,4 +174,4 @@ df.ES <- df %>%
 
 ####  Save Data  ####
 saveRDS(df.ES,
-        "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
+        "C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Paired Data With Effect Sizes.rds")

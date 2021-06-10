@@ -7,39 +7,49 @@ output: html_document
 knitr::opts_chunk$set(echo = F, warning = F, message = F)
 ```
 
-```{r, message = F, warning = F}
+```{r}
 ## Startup
 rm(list = ls())
 library(easypackages)
-libraries("tidyverse", "robumeta", "knitr", "kableExtra", "fastDummies")
+libraries("tidyverse", "fastDummies", "robumeta", "knitr", "kableExtra")
 
 
 ## Load Data
 characteristics <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Clean Data.rds")
 
-df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Data With Effect Sizes.rds")
+df <- readRDS("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\BD-depression-meta-analysis\\Data\\Paired Data With Effect Sizes.rds")
 
 
 ## Prepare Follow-up Data
 #Reshape to long dataset, code for follow-up time-point, and keep only follow-up outcomes
 df.fu <- df %>%
-  select_at(vars(-matches(".post"))) %>%
-  rename(nt.fu1 = t.fu1.n, nt.fu2 = t.fu2.n, nc.fu1 = c.fu1.n, nc.fu2 = c.fu2.n) %>%
-  pivot_longer(cols = c(studyCompletion.fu1, studyCompletion.fu2, nt.fu1, nt.fu2, nc.fu1, nc.fu2, time.fu1:varG.fu2_t2),
-                     names_to = c("var", "followUp"),
-                     names_sep = "\\.") %>%
-        mutate(var = if_else(var %in% c("d", "varD", "g", "varG"),
-                             paste0(var, ".fu", gsub(".*(?=_)", "", followUp, perl = T)),
-                             var),
-               followUp = gsub("_.*", "", followUp)) %>%
-        pivot_wider(names_from = "var",
-                    values_from = "value") %>%
-        drop_na(time) %>%
-        mutate(groupByMeasure = effectLabel,
-               effectLabel = paste0(effectLabel, " (", time, " weeks)"),
-               followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
-                                          time <= 12 ~ "Between 3 and 12 weeks",
-                                          time > 12 ~ "Greater than 12 weeks"))
+  #Keep only IDs, moderators, outcomes
+  select_at(
+    #IDs and moderators
+    vars(studyID:blindAssign, randUnits:length.days, controlCond, effectLabel, 
+         studyCompletion.fu1, studyCompletion.fu2, n.fu1, n.fu2, time.fu1, time.fu2,
+    #Outcomes
+    matches("^g.fu[1-2].*$"), matches("^varG.fu[1-2].*$"))) %>%
+  #Pivot from wide (two follow ups in each row) to long (each row is one follow up and thus one effect size)
+  pivot_longer(cols = studyCompletion.fu1:varG.fu2_t2,
+               names_to = c("var", "followUp"),
+               names_sep = "\\.") %>%  
+  #Move t2/t1t2 information from followUp variable to var variable
+  mutate(var = if_else(var %in% c("studyCompletion", "n", "time"),
+                       var,
+                       paste0(var, ".fu", gsub(".*(?=_)", "", followUp, perl = T))),
+         followUp = gsub("_.*", "", followUp)) %>%
+  #Pivot back out wide so we have both t2 and t1t2 variables in each row 
+  pivot_wider(names_from = "var",
+              values_from = "value") %>%
+  #Remove rows with no data
+  drop_na(time) %>%
+  #Create new labels/moderators
+  mutate(groupByMeasure = effectLabel,
+         effectLabel = paste0(effectLabel, " (", time, " weeks)"),
+         followUpLength = case_when(time < 3 ~ "Less than 3 weeks",
+                                    time <= 12 ~ "Between 3 and 12 weeks",
+                                    time > 12 ~ "Greater than 12 weeks"))
 ```
 
 # Characteristics of included studies
@@ -53,7 +63,7 @@ characteristics %>%
   mutate(name = if_else(name %in% c("studyCompletion.fu1", "studyCompletion.fu2"), "studyCompletion.fu", name)) %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
-            sum = sum(value),
+            count = round(sum(value, na.rm = T)),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -64,13 +74,13 @@ characteristics %>%
 
 ```{r}
 characteristics %>%
-  filter(!duplicated(article)) %>%
+  filter(!duplicated(paste0(article, measure))) %>%
   select(measure, respondent, outcome) %>%
   dummy_cols(remove_selected_columns = T) %>%
   pivot_longer(cols = everything()) %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
-            sum = sum(value),
+            count = round(sum(value, na.rm = T)),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -81,24 +91,57 @@ characteristics %>%
 
 ```{r}
 characteristics %>%
-  filter(!duplicated(article)) %>%
-  select(randUnits.group:length.days, pre.n) %>%
-  dummy_cols(remove_selected_columns = T) %>%
+  filter(!duplicated(paste0(article, groupDetailed))) %>%
+  select(randUnits.group, pre.n, post.n, fu1.n, fu2.n) %>%
   pivot_longer(cols = everything()) %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
-            sum = sum(value),
+            count = round(sum(value, na.rm = T)),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
   kable(digits = 2,
-        caption = "Measure characteristics") %>%
+        caption = "Common group characteristics") %>%
+  kable_styling()
+```
+
+```{r}
+characteristics %>%
+  filter(group == "Treatment",
+         !duplicated(paste0(article, groupDetailed))) %>%
+  select(trtCompletion, interventionParticipant:length.days) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            count = round(sum(value, na.rm = T)),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Treatment group characteristics") %>%
+  kable_styling()
+```
+
+```{r}
+characteristics %>%
+  filter(group == "Control",
+         !duplicated(paste0(article, groupDetailed))) %>%
+  select(controlCond) %>%
+  dummy_cols(remove_selected_columns = T) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  summarize(nonmissing = sum(!is.na(value)),
+            count = round(sum(value, na.rm = T)),
+            mean = mean(value, na.rm = T),
+            median = median(value, na.rm = T),
+            sd = sd(value, na.rm = T)) %>%
+  kable(digits = 2,
+        caption = "Control group characteristics") %>%
   kable_styling()
 ```
 
 # Meta-analysis
-
-Mixed-effects models using `metafor`
 
 ## Post-test effects
 
@@ -119,7 +162,7 @@ print(model.post.IO_t2)
 sensitivity(model.post.IO_t2)
 ```
 
-Test of heterogeneity is the I.sq above
+Test of heterogeneity is the I^2 above
 
 #### Using pre- and post-test data
 
@@ -193,7 +236,7 @@ ggplot(out,
 
 ### Risk of bias assessment
 
-We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
+We will assess publication bias with a funnel plot and Egger's test. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
 
 ```{r}
 df <- df %>%
@@ -201,7 +244,7 @@ df <- df %>%
          gStd.post_t2 = g.post_t2 / seG.post_t2,
          precision.post_t2 = 1 / seG.post_t2)
 
-robu(formula = g.post_t2 ~ 1 + precision.post_t2,
+robu(formula = gStd.post_t2 ~ 1 + precision.post_t2,
      data = df,
      studynum = studyID,
      var.eff.size = varG.post_t2,
@@ -239,10 +282,8 @@ df %>%
 ```
 
 ```{r}
-df$n = df$c.pre.n + df$t.pre.n
-
 df %>%
-  ggplot(aes(g.post_t2, n)) +
+  ggplot(aes(g.post_t2, n.pre)) +
   geom_point() +
   scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
   scale_y_continuous(name = "n") +
@@ -324,12 +365,10 @@ for(moderator in moderators) {
                   small = T)
     
     coef = model$reg_table$b.r[2]
-    
     test = "t"
     dfs = round(model$reg_table$dfs[2], 3)
     stat = model$reg_table$t[2]
     p = model$reg_table$prob[2]
-    
     nStudies = length(unique(df$studyID[!is.na(df[[moderator]])]))
     nES = sum(!is.na(df[[moderator]]))
     
@@ -354,11 +393,11 @@ for(moderator in moderators) {
     if(length(levels) == 2) {
       
       model <- robu(formula = as.formula(paste0("g.post_t2 ~ 1 + ", moderator)),
-                  data = df[df[[moderator]] %in% levels,],
-                  studynum = studyID,
-                  var.eff.size = varG.post_t2,
-                  rho = .8,
-                  small = T)
+                    data = df[df[[moderator]] %in% levels,],
+                    studynum = studyID,
+                    var.eff.size = varG.post_t2,
+                    rho = .8,
+                    small = T)
     
       test = "t"
       dfs = round(model$reg_table$dfs[2], 3)
@@ -379,19 +418,18 @@ for(moderator in moderators) {
         
       for(level in levels) {
         
-        nStudies = length(unique(df$studyID[df[[moderator]] %in% level]))
-        nES = sum(df[[moderator]] %in% level)
-        
         model <- robu(formula = g.post_t2 ~ 1,
-                  data = df[df[[moderator]] %in% level,],
-                  studynum = studyID,
-                  var.eff.size = varG.post_t2,
-                  rho = .8,
-                  small = T)
+                      data = df[df[[moderator]] %in% level,],
+                      studynum = studyID,
+                      var.eff.size = varG.post_t2,
+                      rho = .8,
+                      small = T)
         
         subgroupEst = model$reg_table$b.r
         subgroupP = model$reg_table$prob
-          
+        nStudies = length(unique(df$studyID[df[[moderator]] %in% level]))
+        nES = sum(df[[moderator]] %in% level)
+        
         out <- rbind(out, tibble(
           moderator = moderator,
           level = level,
@@ -460,11 +498,11 @@ _End of post-test effects analysis._
 
 ```{r}
 model.fu.IO_t2 <- robu(formula = g.fu_t2 ~ 1,
-                         data = df.fu,
-                         studynum = studyID,
-                         var.eff.size = varG.fu_t2,
-                         rho = .8,
-                         small = T)
+                       data = df.fu,
+                       studynum = studyID,
+                       var.eff.size = varG.fu_t2,
+                       rho = .8,
+                       small = T)
 
 print(model.fu.IO_t2)
 ```
@@ -489,7 +527,6 @@ out <- df.fu %>%
   mutate(est = g.fu_t2,
          lower = g.fu_t2 - (1.96 * sqrt(varG.fu_t2)),
          upper = g.fu_t2 + (1.96 * sqrt(varG.fu_t2)),
-         n = nt + nc,
          article = factor(article)) %>%
   select(article, effectLabel, est, lower, upper, n)
 
@@ -541,23 +578,19 @@ ggplot(out,
 
 ### Risk of bias assessment
 
-We will assess publication bias with a funnel plot and Egger's test. Since we cannot use `regtest` with `rma.mv`, we will instead conduct it manually within the framework of our multilevel model. We do this by regressing each effect's normalized effect estimate (estimate divided by its standard error) against precision (reciprocal of the standard error of the estimate) and testing the significance of the intercept.
-
 ```{r}
 df.fu <- df.fu %>%
   mutate(seG.fu_t2 = sqrt(varG.fu_t2),
          gStd.fu_t2 = g.fu_t2 / seG.fu_t2,
          precision.fu_t2 = 1 / seG.fu_t2)
 
-robu(formula = g.fu_t2 ~ 1 + precision.fu_t2,
+robu(formula = gStd.fu_t2 ~ 1 + precision.fu_t2,
      data = df.fu,
      studynum = studyID,
      var.eff.size = varG.fu_t2,
      rho = .8,
      small = T)
 ```
-
-In addition, we tested the following moderators, included in table below: `blindAssign`, `manual`, `preTraining`, `supervision`, `studyCompletion.post`
 
 ```{r}
 est = model.fu.IO_t2$b[[1]]
@@ -587,8 +620,6 @@ df.fu %>%
 ```
 
 ```{r}
-df.fu$n = df.fu$nc + df.fu$nt
-
 df.fu %>%
   ggplot(aes(g.fu_t2, n)) +
   geom_point() +
@@ -599,8 +630,6 @@ df.fu %>%
 ```
 
 ### Moderation tests
-
-
 
 ```{r}
 moderators <- c(
@@ -643,12 +672,10 @@ for(moderator in moderators) {
                   small = T)
     
     coef = model$reg_table$b.r[2]
-    
     test = "t"
     dfs = round(model$reg_table$dfs[2], 3)
     stat = model$reg_table$t[2]
     p = model$reg_table$prob[2]
-    
     nStudies = length(unique(df.fu$studyID[!is.na(df.fu[[moderator]])]))
     nES = sum(!is.na(df.fu[[moderator]]))
     
@@ -673,11 +700,11 @@ for(moderator in moderators) {
     if(length(levels) == 2) {
       
       model <- robu(formula = as.formula(paste0("g.fu_t2 ~ 1 + ", moderator)),
-                  data = df.fu[df.fu[[moderator]] %in% levels,],
-                  studynum = studyID,
-                  var.eff.size = varG.fu_t2,
-                  rho = .8,
-                  small = T)
+                    data = df.fu[df.fu[[moderator]] %in% levels,],
+                    studynum = studyID,
+                    var.eff.size = varG.fu_t2,
+                    rho = .8,
+                    small = T)
     
       test = "t"
       dfs = round(model$reg_table$dfs[2], 3)
@@ -698,16 +725,15 @@ for(moderator in moderators) {
         
       for(level in levels) {
         
+        model <- robu(formula = g.fu_t2 ~ 1,
+                      data = df.fu[df.fu[[moderator]] %in% level,],
+                      studynum = studyID,
+                      var.eff.size = varG.fu_t2,
+                      rho = .8,
+                      small = T)
+
         nStudies = length(unique(df.fu$studyID[df.fu[[moderator]] %in% level]))
         nES = sum(df.fu[[moderator]] %in% level)
-        
-        model <- robu(formula = g.fu_t2 ~ 1,
-                  data = df.fu[df.fu[[moderator]] %in% level,],
-                  studynum = studyID,
-                  var.eff.size = varG.fu_t2,
-                  rho = .8,
-                  small = T)
-        
         subgroupEst = model$reg_table$b.r
         subgroupP = model$reg_table$prob
           
