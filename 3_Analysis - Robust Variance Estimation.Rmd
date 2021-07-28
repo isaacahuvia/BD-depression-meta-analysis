@@ -64,6 +64,8 @@ characteristics %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
             count = round(sum(value, na.rm = T)),
+            min = min(value, na.rm = T),
+            max = max(value, na.rm = T),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -81,6 +83,8 @@ characteristics %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
             count = round(sum(value, na.rm = T)),
+            min = min(value, na.rm = T),
+            max = max(value, na.rm = T),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -97,6 +101,8 @@ characteristics %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
             count = round(sum(value, na.rm = T)),
+            min = min(value, na.rm = T),
+            max = max(value, na.rm = T),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -115,6 +121,8 @@ characteristics %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
             count = round(sum(value, na.rm = T)),
+            min = min(value, na.rm = T),
+            max = max(value, na.rm = T),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -133,6 +141,8 @@ characteristics %>%
   group_by(name) %>%
   summarize(nonmissing = sum(!is.na(value)),
             count = round(sum(value, na.rm = T)),
+            min = min(value, na.rm = T),
+            max = max(value, na.rm = T),
             mean = mean(value, na.rm = T),
             median = median(value, na.rm = T),
             sd = sd(value, na.rm = T)) %>%
@@ -164,6 +174,32 @@ print(model.post.IO_t2)
 sensitivity(model.post.IO_t2)
 ```
 
+Depression only
+
+```{r}
+df %>%
+  filter(outcome == "Depression Symptomatology") %>%
+  robu(data = .,
+       formula = g.post_t2 ~ 1,
+       studynum = studyID,
+       var.eff.size = varG.post_t2,
+       rho = .8,
+       small = T)
+```
+
+NA only
+
+```{r}
+df %>%
+  filter(outcome == "Trait Negative Affect") %>%
+  robu(data = .,
+       formula = g.post_t2 ~ 1,
+       studynum = studyID,
+       var.eff.size = varG.post_t2,
+       rho = .8,
+       small = T)
+```
+
 Test of heterogeneity is the I^2 above
 
 #### Using pre- and post-test data
@@ -186,7 +222,7 @@ out <- df %>%
   mutate(est = g.post_t2,
          lower = g.post_t2 - (1.96 * sqrt(varG.post_t2)),
          upper = g.post_t2 + (1.96 * sqrt(varG.post_t2)),
-         n = t.post.n + c.post.n,
+         n = n.post,
          article = factor(article)) %>%
   select(article, effectLabel, est, lower, upper, n)
 
@@ -275,6 +311,18 @@ b2 = -est * m2
 df %>%
   ggplot(aes(g.post_t2, seG.post_t2)) +
   geom_point() +
+  scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
+  scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
+  geom_vline(xintercept = est) +
+  geom_abline(intercept = b1, slope = m1, linetype = 2) +
+  geom_abline(intercept = b2, slope = m2, linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+df %>%
+  ggplot(aes(g.post_t2, seG.post_t2)) +
+  geom_point(aes(color = outcome)) +
   scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
   scale_y_reverse(name = "Standard Error", limits = c(.325, 0), expand = c(0, 0)) +
   geom_vline(xintercept = est) +
@@ -507,6 +555,34 @@ model.fu.IO_t2 <- robu(formula = g.fu_t2 ~ 1,
                        small = T)
 
 print(model.fu.IO_t2)
+
+sensitivity(model.fu.IO_t2)
+```
+
+Depression only
+
+```{r}
+df.fu %>%
+  filter(outcome == "Depression Symptomatology") %>%
+  robu(data = .,
+       formula = g.fu_t2 ~ 1,
+       studynum = studyID,
+       var.eff.size = varG.fu_t2,
+       rho = .8,
+       small = T)
+```
+
+NA only
+
+```{r}
+df.fu %>%
+  filter(outcome == "Trait Negative Affect") %>%
+  robu(data = .,
+       formula = g.fu_t2 ~ 1,
+       studynum = studyID,
+       var.eff.size = varG.fu_t2,
+       rho = .8,
+       small = T)
 ```
 
 #### Using pre-test and follow-up data
