@@ -243,11 +243,11 @@ diamond <- data.frame(x = c(model.post.IO_t2$reg_table["CI.U"][[1]],
                       y = c(1, 1.5, 1, .5),
                       article = "Overall Estimate")
 
-ggplot(out, 
-       aes(y = effectLabel, 
-           x = est,
-           xmin = lower,
-           xmax = upper)) +
+forest.post <- out %>%
+  ggplot(aes(y = effectLabel,
+             x = est,
+             xmin = lower,
+             xmax = upper)) +
   geom_point(aes(size = n), 
              shape = "square") +
   geom_errorbarh() +
@@ -270,6 +270,10 @@ ggplot(out,
                aes(x = x, y = y),
                inherit.aes = F,
                fill = "black")
+
+forest.post
+ggsave("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\IJED Submission\\Figure 2 (Forest Plot, Post-intervention).png",
+       width = 175, units = "mm")
 ```
 
 ### Risk of bias assessment
@@ -308,7 +312,7 @@ b2 = c(est - 1.96 * seMax, seMax)
 m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
 b2 = -est * m2
 
-df %>%
+funnel.post <- df %>%
   ggplot(aes(g.post_t2, seG.post_t2)) +
   geom_point() +
   scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
@@ -317,6 +321,10 @@ df %>%
   geom_abline(intercept = b1, slope = m1, linetype = 2) +
   geom_abline(intercept = b2, slope = m2, linetype = 2) +
   theme_classic()
+
+funnel.post
+ggsave("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\IJED Submission\\Figure 4 (Funnel Plot, Post-intervention).png",
+       width = 55, height = 55, units = "mm")
 ```
 
 ```{r}
@@ -625,11 +633,11 @@ diamond <- data.frame(x = c(model.fu.IO_t2$reg_table["CI.U"][[1]],
                       y = c(1, 1.5, 1, .5),
                       article = "Overall Estimate")
 
-ggplot(out, 
-       aes(y = effectLabel, 
-           x = est,
-           xmin = lower,
-           xmax = upper)) +
+forest.FU <- out %>%
+  ggplot(aes(y = effectLabel,
+             x = est,
+             xmin = lower,
+             xmax = upper)) +
   geom_point(aes(size = n), 
              shape = "square") +
   geom_errorbarh() +
@@ -652,6 +660,10 @@ ggplot(out,
                aes(x = x, y = y),
                inherit.aes = F,
                fill = "black")
+
+forest.FU
+ggsave("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\IJED Submission\\Figure 3 (Forest Plot, Follow-up).png",
+       width = 175, units = "mm")
 ```
 
 ### Risk of bias assessment
@@ -686,7 +698,7 @@ b2 = c(est - 1.96 * seMax, seMax)
 m2 = (b2[2] - a2[2]) / (b2[1] - a2[1])
 b2 = -est * m2
 
-df.fu %>%
+funnel.FU <- df.fu %>%
   ggplot(aes(g.fu_t2, seG.fu_t2)) +
   geom_point() +
   scale_x_continuous(name = "Hedge's g", limits = c(est - 1, est + 1)) +
@@ -695,6 +707,10 @@ df.fu %>%
   geom_abline(intercept = b1, slope = m1, linetype = 2) +
   geom_abline(intercept = b2, slope = m2, linetype = 2) +
   theme_classic()
+
+funnel.FU
+ggsave("C:\\Users\\isaac\\Google Drive\\Research\\Projects\\Body Dissatisfaction Meta-Analysis\\IJED Submission\\Figure 5 (Funnel Plot, Follow-up).png",
+       width = 55, height = 55, units = "mm")
 ```
 
 ```{r}
